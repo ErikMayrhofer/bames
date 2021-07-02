@@ -7,20 +7,24 @@ class Bicturetaker:
 
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
+        self.cap.set(3, 1920)
+        self.cap.set(4, 1080)
         self.detector = Detector(families='tag16h5',
-                        nthreads=1,
+                        nthreads=8,
                         quad_decimate=1.0,
                         quad_sigma=0.0,
                         refine_edges=1,
                         decode_sharpening=0.25,
                         debug=0)
-        self.last_results = None
+        self.last_results = []
 
     def take_bicture(self):
         _, img = self.cap.read()
         gray = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
         results = self.detector.detect(gray)
-        print(len(results))
+
+        results = [result for result in results if result.tag_id in range(4)]
+        ic(len(results))
 
         if len(results) == 4:
             actual = np.zeros([4, 2], dtype=np.float32)
@@ -49,18 +53,18 @@ class Bicturetaker:
             matrix = cv2.getPerspectiveTransform(actual, target)
             distorted = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
 
-            cv2.imshow("Distorted: ", distorted)
-            key = cv2.waitKey(20)
-            if key == 27:
-                pass
+            cv2.imshow("Distorted: ", cv2.resize(distorted, (640, 480)))
 
         cv2.imshow("Image: ", img)
-        key = cv2.waitKey(20)
+        key = cv2.waitKey(10)
         if key == 27:
             pass
 
 
-if __name__ == '__main__':
+def main():
     bt = Bicturetaker()
     while True:
         bt.take_bicture()
+
+if __name__ == '__main__':
+    main()
