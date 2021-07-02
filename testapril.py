@@ -1,6 +1,5 @@
 from pupil_apriltags import Detector
 import cv2
-from numpy.linalg import inv
 from icecream import ic
 import numpy as np
 
@@ -51,7 +50,7 @@ while True:
         # info = cv2.line(img, (int(corn[1][0], int(corn[1][1])), (int(corn[2][0]), int(corn[2][1]))), (0,255,0), 5)
         # cv2.imshow("Info: ", info)
 
-        trans = np.identity(3);
+        trans = np.identity(3)
         # trans[0][2] = -res.center[0] + img.shape[1]/200
         # trans[1][2] = -res.center[1] + img.shape[1]/200
         trans[2][2] = 40
@@ -74,7 +73,7 @@ while True:
         distorted = cv2.warpPerspective(img, matrix, (500, 600))
 
         #distorted = cv2.warpPerspective(img, trans*res.homography, (img.shape[1],img.shape[0]), cv2.WARP_INVERSE_MAP)
-        cv2.imshow("Distorted: ", distorted, )
+        cv2.imshow("Distorted: ", distorted)
 
     cv2.imshow("Image: ", img)
     key = cv2.waitKey(20)
