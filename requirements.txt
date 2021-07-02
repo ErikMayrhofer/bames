@@ -2,3 +2,5 @@ opencv-python==4.5.2.54
 pupil-apriltags==1.0.4
 icecream==2.1.1
 numpy==1.21.0
+pygame==2.0.1
+
