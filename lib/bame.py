@@ -40,8 +40,8 @@ class SceneWithBarser:
         pass
 
     def tick(self, context: TickContext) -> bool:
-        parsed_game = self.barser.get_barsed_field()
-        parsed_age = self.barser.get_barsed_age()
+        parsed_game = self.barser.get_payload()
+        parsed_age = self.barser.get_payload_age()
         ic(parsed_age)
         return self.sub_scene.tick(context)
 

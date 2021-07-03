@@ -3,6 +3,9 @@ from typing import Optional
 import time
 
 class WorkerPayload:
+    """
+    The actual 
+    """
     def __init__(self, message: str):
         self.message = message
 
@@ -23,6 +26,9 @@ def barser_worker(pipe_connection: connection.Connection):
 
 
 class WorkerHandle:
+    """
+    Unified access to the worker process.
+    """
     def __init__(self, pipe_connection: connection.Connection, process: Process):
         self.pipe_connection = pipe_connection
         self.process = process
@@ -37,23 +43,33 @@ class WorkerHandle:
 
 
 class Barser:
+    """
+    Utility class to spawn a seperate process which then runs the bicture-taking and barsing
+    """
+
     handle: Optional[WorkerHandle]
     last_barsed: Optional[WorkerPayload]
-    last_barsed_age: Optional[float]
+    last_barsed_time: Optional[float]
     def __init__(self):
         self.handle = None
         self.last_barsed = None
-        self.last_barsed_age = None
+        self.last_barsed_time = None
         pass
 
     def launch(self):
+        """
+        Actually launches the thread. Do not forget to call stop() at the end.
+        """
         pipe_connection, child_pipe = Pipe()
         process = Process(target=barser_worker, args=(child_pipe,))
         process.start()
         self.handle = WorkerHandle(pipe_connection, process)
         pass
 
-    def get_barsed_field(self) -> Optional[WorkerPayload]:
+    def get_payload(self) -> Optional[WorkerPayload]:
+        """
+        Last workload sent by the worker process. None if None was received yet.
+        """
         assert self.handle is not None
         
         data = None
@@ -63,18 +79,24 @@ class Barser:
 
         if data is not None:
             self.last_barsed = data
-            self.last_barsed_age = time.time()
+            self.last_barsed_time = time.time()
             
         return self.last_barsed
 
-    def get_barsed_age(self) -> Optional[float]:
+    def get_payload_age(self) -> Optional[float]:
+        """
+        Payload time in seconds. None if no payload was received yet.
+        """
         assert self.handle is not None
 
-        if self.last_barsed_age is None:
+        if self.last_barsed_time is None:
             return None
-        return time.time() - self.last_barsed_age
+        return time.time() - self.last_barsed_time
 
     def stop(self):
+        """
+        Blocks until the worker process terminated.
+        """
         assert self.handle is not None
         self.handle.stop()
 
