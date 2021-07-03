@@ -8,7 +8,6 @@ class Bicturetaker:
         self.cap = cv2.VideoCapture(0)
         self.cap.set(3, resolution[0])
         self.cap.set(4, resolution[1])
-        #TODO FAMILY ARGUMENT
         self.detector = Detector(families=family,
                         nthreads=8,
                         quad_decimate=2.0,
