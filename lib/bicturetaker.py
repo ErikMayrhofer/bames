@@ -8,6 +8,7 @@ class Bicturetaker:
         self.cap = cv2.VideoCapture(0)
         self.cap.set(3, 1920)
         self.cap.set(4, 1080)
+        #TODO FAMILY ARGUMENT
         self.detector = Detector(families='tag16h5',
                         nthreads=8,
                         quad_decimate=1.0,
@@ -17,7 +18,18 @@ class Bicturetaker:
                         debug=0)
         self.last_results = None
 
+
     def take_bicture(self):
+        """
+        Takes a 🅱️icture, analyzes it for Apriltags and stretches it.
+        Currently searches for 16h5 tags with IDs 0-3 and stretches it as follows:
+        +---------------+
+        |3             2|
+        |               |
+        |0             1|
+        +---------------+
+        This may seem kind of autistic, but pupil-apriltags orders their corners in the same way, so this is more consistent when processing.
+        """
         _, img = self.cap.read()
         gray = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
@@ -32,10 +44,6 @@ class Bicturetaker:
                 y1 = y1 if y1 >= 0 else 0
                 y2 = int(max([y for (_, y) in last_result.corners])) + 10
                 y2 = y2 if y2 < img.shape[0] else img.shape[0]
-                cv2.line(img, (x1, y1), (x1, y2), (255, 0, 0))
-                cv2.line(img, (x1, y2), (x2, y2), (255, 0, 0))
-                cv2.line(img, (x2, y2), (x2, y1), (255, 0, 0))
-                cv2.line(img, (x2, y1), (x1, y1), (255, 0, 0))
                 res = self.detector.detect(gray[y1:y2,x1:x2])
                 if len(res) != 1:
                     break
