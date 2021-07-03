@@ -1,6 +1,8 @@
 from typing import Type, Any
 import pygame
-from lib.util.keyframes import Keyframes
+from .util.keyframes import Keyframes
+from .barser import Barser
+from icecream import ic
 
 class TickContext:
     fps: float
@@ -12,6 +14,10 @@ class SplashScene:
         self.splash_img = pygame.image.load("img/Logo.jpg")
         self.frames = Keyframes([(0, 0), (0.5, 255), (1.3, 255), (1.5, 0)])
 
+
+    def load(self):
+        pass
+
     def tick(self, context: TickContext) -> bool:
         self.frames.advance(context.delta_ms/1000)
         val = self.frames.value()
@@ -20,12 +26,34 @@ class SplashScene:
         context.screen.fill((val, val, val),special_flags=pygame.BLEND_MULT)
         return self.frames.done()
 
+    def unload(self):
+        pass
+
+class SceneWithBarser:
+    def __init__(self, sub_scene):
+        self.sub_scene = sub_scene
+        # TODO: Barser is initiated here and therefore always scans....
+        self.barser = Barser()
+        self.barser.launch()
+
+    def load(self):
+        pass
+
+    def tick(self, context: TickContext) -> bool:
+        parsed_game = self.barser.get_barsed_field()
+        parsed_age = self.barser.get_barsed_age()
+        ic(parsed_age)
+        return self.sub_scene.tick(context)
+
+    def unload(self):
+        self.barser.stop()
+
 
 class Bame:
     def __init__(self, classname: Type):
         self.game_instance = classname()
         self.running = False
-        self.scenes = [SplashScene(), self.game_instance]
+        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance)]
 
     def run(self):
         pygame.init()
@@ -34,9 +62,12 @@ class Bame:
         self.start_loop()
 
     def next_scene(self):
+        self.scenes[0].unload()
         self.scenes.pop(0)
         if len(self.scenes) == 0:
             self.running = False
+        else:
+            self.scenes[0].load()
 
     def start_loop(self):
         clock = pygame.time.Clock()
@@ -59,6 +90,8 @@ class Bame:
 
             pygame.display.flip()
 
+        if len(self.scenes) > 0:
+            self.scenes[0].unload()
         print("Bye!")
 
     def handle_events(self):
