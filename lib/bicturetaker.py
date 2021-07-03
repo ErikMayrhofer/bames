@@ -4,16 +4,16 @@ import numpy as np
 
 class Bicturetaker:
 
-    def __init__(self):
+    def __init__(self, resolution=(1920, 1080), family='tag16h5'):
         self.cap = cv2.VideoCapture(0)
-        self.cap.set(3, 1920)
-        self.cap.set(4, 1080)
+        self.cap.set(3, resolution[0])
+        self.cap.set(4, resolution[1])
         #TODO FAMILY ARGUMENT
-        self.detector = Detector(families='tag16h5',
+        self.detector = Detector(families=family,
                         nthreads=8,
-                        quad_decimate=1.0,
+                        quad_decimate=2.0,
                         quad_sigma=0.0,
-                        refine_edges=1,
+                        refine_edges=0,
                         decode_sharpening=0.25,
                         debug=0)
         self.last_results = None
