@@ -44,11 +44,6 @@ class Bicturetaker:
                 results.append(res[0])
         if len(results) != 4:
             results = self.detector.detect(gray)
-            
-        cv2.imshow("asdf: ", cv2.resize(img, (960, 540)))
-        key = cv2.waitKey(1)
-        if key == 27:
-            exit(0)
 
         results = [result for result in results if result.tag_id in range(4)]
 
