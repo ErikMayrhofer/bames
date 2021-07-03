@@ -1,16 +1,20 @@
 from multiprocessing import Process, Pipe, connection
 from typing import Optional
+from lib.bicturetaker import Bicturetaker
 import time
 
 class WorkerPayload:
     """
     The actual 
     """
-    def __init__(self, message: str):
+    def __init__(self, message: str, image):
         self.message = message
+        self.image = image
 
 def barser_worker(pipe_connection: connection.Connection):
     running = True
+
+    taker = Bicturetaker()
 
     while running:
         if pipe_connection.poll(0):
@@ -18,8 +22,8 @@ def barser_worker(pipe_connection: connection.Connection):
             if res:
                 running = False
 
-        time.sleep(0.8) 
-        pipe_connection.send(WorkerPayload(message="Helo"))
+        p = taker.take_bicture()
+        pipe_connection.send(WorkerPayload(message="Helo", image=p))
 
     print("Barser Worker shut down.")
 
@@ -74,7 +78,6 @@ class Barser:
         
         data = None
         while self.handle.pipe_connection.poll(0):
-            print("Receiv.")
             data = self.handle.pipe_connection.recv()
 
         if data is not None:

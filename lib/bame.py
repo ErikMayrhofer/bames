@@ -8,6 +8,8 @@ class TickContext:
     delta_ms: int
     screen: Any
 
+    temp_game_field: Any
+
 class SplashScene:
     def __init__(self):
         self.splash_img = pygame.image.load("img/Logo.jpg")
@@ -40,6 +42,10 @@ class SceneWithBarser:
     def tick(self, context: TickContext) -> bool:
         _parsed_game = self.barser.get_bayload()
         _parsed_age = self.barser.get_bayload_age()
+        if _parsed_game:
+            context.temp_game_field = _parsed_game.image
+        else:
+            context.temp_game_field = None
         return self.sub_scene.tick(context)
 
     def unload(self):
