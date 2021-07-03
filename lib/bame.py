@@ -2,7 +2,6 @@ from typing import Type, Any
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
-from icecream import ic
 
 class TickContext:
     fps: float
@@ -33,16 +32,14 @@ class SceneWithBarser:
     def __init__(self, sub_scene):
         self.sub_scene = sub_scene
         # TODO: Barser is initiated here and therefore always scans....
+
+    def load(self):
         self.barser = Barser()
         self.barser.launch()
 
-    def load(self):
-        pass
-
     def tick(self, context: TickContext) -> bool:
-        parsed_game = self.barser.get_payload()
-        parsed_age = self.barser.get_payload_age()
-        ic(parsed_age)
+        _parsed_game = self.barser.get_bayload()
+        _parsed_age = self.barser.get_bayload_age()
         return self.sub_scene.tick(context)
 
     def unload(self):
@@ -52,6 +49,8 @@ class SceneWithBarser:
 class Bame:
     def __init__(self, classname: Type):
         self.game_instance = classname()
+        # Get Barsers from game_instance using the decorators
+        # Pass Barsers to SceneWithBarser
         self.running = False
         self.scenes = [SplashScene(), SceneWithBarser(self.game_instance)]
 

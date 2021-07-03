@@ -66,7 +66,7 @@ class Barser:
         self.handle = WorkerHandle(pipe_connection, process)
         pass
 
-    def get_payload(self) -> Optional[WorkerPayload]:
+    def get_bayload(self) -> Optional[WorkerPayload]:
         """
         Last workload sent by the worker process. None if None was received yet.
         """
@@ -83,7 +83,7 @@ class Barser:
             
         return self.last_barsed
 
-    def get_payload_age(self) -> Optional[float]:
+    def get_bayload_age(self) -> Optional[float]:
         """
         Payload time in seconds. None if no payload was received yet.
         """
