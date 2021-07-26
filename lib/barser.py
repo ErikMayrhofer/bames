@@ -1,7 +1,23 @@
 from multiprocessing import Process, Pipe, connection
-from typing import Optional
+from typing import List, Optional
 from lib.bicturetaker import Bicturetaker
 import time
+
+
+class BarserMethod:
+    """
+    the @barser decorator wraps the functions into this class.
+    The barser then loops over all members of a BameInstance, looking for fields of this type.
+    """
+    def __init__(self, fun) -> None:
+        self.fun = fun
+        pass
+
+def barser(fun):
+    """
+    Decorator applied to methods to mark them as BarserMethods.
+    """
+    return BarserMethod(fun)
 
 class WorkerPayload:
     """
@@ -19,7 +35,7 @@ class WorkerPayload:
         self.image = image
         self.barsed_info = barsed_info
 
-def barser_worker(pipe_connection: connection.Connection):
+def barser_worker(pipe_connection: connection.Connection, barser_methods: List[BarserMethod]):
     """
     Worker method which runs in a seperate process. This creates the `WorkerBayload` and sends it to the `Barser`
 
@@ -37,14 +53,16 @@ def barser_worker(pipe_connection: connection.Connection):
     taker = Bicturetaker()
 
     while running:
+        print("...... WORKK")
         if pipe_connection.poll(0):
             res = pipe_connection.recv()
             if res:
                 running = False
 
         if running:
-            d: dict = taker.take_bicture()
-            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info=None))
+            print("barser_worker running ", barser_methods)
+            d = taker.take_bicture()
+            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info={}))
 
     print("Barser Worker shut down.")
 
@@ -76,18 +94,27 @@ class Barser:
     handle: Optional[WorkerHandle]
     last_barsed: Optional[WorkerPayload]
     last_barsed_time: Optional[float]
-    def __init__(self):
+    barser_methods: List[BarserMethod]
+    def __init__(self, game_instance):
         self.handle = None
         self.last_barsed = None
         self.last_barsed_time = None
-        pass
+
+        # Find all properties of type BarserMethod in the game_instance. 
+        # Methods marked with @barser are also turned into BarserMethods
+        self.barser_methods = []
+        for m in dir(game_instance):
+            val = getattr(game_instance, m)
+            if isinstance(val, BarserMethod):
+                self.barser_methods.append(val)
+        
 
     def launch(self):
         """
         Actually launches the thread. Do not forget to call stop() at the end.
         """
         pipe_connection, child_pipe = Pipe()
-        process = Process(target=barser_worker, args=(child_pipe,))
+        process = Process(target=barser_worker, args=(child_pipe, self.barser_methods))
         process.start()
         self.handle = WorkerHandle(pipe_connection, process)
         pass

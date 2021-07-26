@@ -1,13 +1,16 @@
 from lib import Bame, TickContext
 import pygame
 from pygame.surface import Surface
+from lib.barser import barser
+
 
 class BummyDame:
     
-    #@barser
-    #def barse_squares(image, field):
+    @barser
+    def barse_squares(image, field):
+        print("Barse Squares epic many")
         #field.add(SquareNStuff(x, y))
-        #pass
+        pass
 
     #@barser
     #def barse_specials(image, field):

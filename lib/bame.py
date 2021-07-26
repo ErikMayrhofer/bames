@@ -80,7 +80,7 @@ class SceneWithBarser:
         # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self):
-        self.barser = Barser()
+        self.barser = Barser(self.sub_scene)
         self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
@@ -111,7 +111,7 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [SplashScene(), InitTagsScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
+        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
 
     def run(self):
         pygame.init()
