@@ -1,9 +1,10 @@
-from lib import barameters
+from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
 from typing import Type, Any
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
+import numpy as np
 
 class TickContext:
     fps: float
@@ -33,6 +34,53 @@ class SplashScene:
     def unload(self):
         pass
 
+class SetupScene:
+    def __init__(self):
+        self.taker = Bicturetaker()
+
+    def load(self):
+        pass
+
+    def tick(self, context: TickContext):
+        d = self.taker.take_bicture()
+        if d["raw"] is not None:
+            img = np.swapaxes(d["raw"], 0, 1)
+            s = pygame.pixelcopy.make_surface(img)
+            context.screen.blit(s, (0, 0)) 
+
+    def unload(self):
+        del self.taker
+
+class InitTagsScene:
+    def __init__(self):
+        self.tag_size = 192
+        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.tag_size, self.tag_size)) for num in range(4) ]
+        self.found = False
+
+    def load(self):
+        self.barser = Barser()
+        self.barser.launch()
+
+    def tick(self, context: TickContext) -> bool:
+        _parsed_game = self.barser.get_bayload()
+        if _parsed_game and _parsed_game.image is not None and self.found:
+            return True
+        if _parsed_game and _parsed_game.image is not None and not self.found:
+            self.found = True
+        else:
+            self.found = False
+        shape = context.screen.get_size()
+        context.screen.blits([
+            (self.tags[0], (0, shape[1]-self.tag_size)),
+            (self.tags[1], (shape[0]-self.tag_size, shape[1]-self.tag_size)),
+            (self.tags[2], (shape[0]-self.tag_size, 0)),
+            (self.tags[3], (0, 0))
+        ])
+        return False
+
+    def unload(self):
+        pass
+
 class SceneWithBarser:
     def __init__(self, sub_scene, *, barameters: Barameters):
         self.sub_scene = sub_scene
@@ -50,7 +98,7 @@ class SceneWithBarser:
             context.temp_game_field = _parsed_game.image
         else:
             context.temp_game_field = None
-        done = self.sub_scene.tick(context)
+        next_scene = self.sub_scene.tick(context)
         shape = context.screen.get_size()
         context.screen.blits([
             (self.tags[0], (0, shape[1]-context.barameters.tag_size)),
@@ -58,7 +106,7 @@ class SceneWithBarser:
             (self.tags[2], (shape[0]-context.barameters.tag_size, 0)),
             (self.tags[3], (0, 0))
         ])
-        return done
+        return next_scene
 
     def unload(self):
         self.barser.stop()
@@ -71,11 +119,11 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
+        self.scenes = [SplashScene(), InitTagsScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
 
     def run(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((640, 480), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
 
         self.start_loop()
 
