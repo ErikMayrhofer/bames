@@ -43,24 +43,19 @@ class InitTagsScene:
         self.found = False
 
     def load(self):
-        self.barser = Barser()
-        self.barser.launch()
+        self.taker = Bicturetaker()
 
     def tick(self, context: TickContext) -> bool:
-        _parsed_game = self.barser.get_bayload()
-        if _parsed_game:
-            if _parsed_game.image is not None and self.found:
+        d = self.taker.take_bicture()
+        if "img" in d:
+            if self.found:
                 return True
-            if _parsed_game.image is not None and not self.found:
-                self.found = True
-            else:
-                self.found = False
-            if _parsed_game.raw_image is not None:
-                img = np.swapaxes(_parsed_game.raw_image, 0, 1)
-                s = pygame.pixelcopy.make_surface(img)
-                context.screen.blit(s, (0, 0))
+            self.found = True
         else:
             self.found = False
+        img = np.swapaxes(d["raw"], 0, 1)
+        s = pygame.pixelcopy.make_surface(img)
+        context.screen.blit(s, (0, 0))
         shape = context.screen.get_size()
         context.screen.blits([
             (self.tags[0], (0, shape[1]-self.tag_size)),
@@ -71,7 +66,7 @@ class InitTagsScene:
         return False
 
     def unload(self):
-        pass
+        del self.taker
 
 class SceneWithBarser:
     def __init__(self, sub_scene, *, barameters: Barameters):
