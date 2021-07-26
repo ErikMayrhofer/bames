@@ -1,6 +1,6 @@
 from lib import barameters
 from lib.barameters import Barameters
-from typing import Type, Any
+from typing import Type, Any, List
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
@@ -12,6 +12,8 @@ class TickContext:
     barameters: Barameters
 
     temp_game_field: Any
+
+    events: List[Any]
 
 class SplashScene:
     def __init__(self):
@@ -98,10 +100,11 @@ class Bame:
             context.delta_ms = delta_t
             context.screen = self.screen
             context.barameters = self.barameters
+            context.events = self.handle_events()
+
+            print(f"Unhandled Events {context.events}")
 
             self.screen.fill((0, 0, 0)) 
-            
-            self.handle_events()
             
             next_scene = self.scenes[0].tick(context)
             if next_scene:
@@ -113,13 +116,18 @@ class Bame:
             self.scenes[0].unload()
         print("Bye!")
 
-    def handle_events(self):
+    def handle_events(self) -> List[Any]:
+        unhandled_events = []
         for event in pygame.event.get():
-            self.handle_event(event)
+            if not self.handle_event(event):
+                unhandled_events.append(event)
+        return unhandled_events
             
     def handle_event(self, event):
-        print(f"EventType {event}")
         if event.type == pygame.QUIT:
             self.running = False
+            return True
         if event.type == pygame.WINDOWRESIZED:
             pygame.display.update()
+            return True
+        return False
