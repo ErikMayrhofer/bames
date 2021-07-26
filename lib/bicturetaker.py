@@ -4,7 +4,7 @@ import numpy as np
 
 class Bicturetaker:
 
-    def __init__(self, resolution=(1920, 1080), family='tag16h5'):
+    def __init__(self, resolution=(640, 480), family='tag16h5'):
         self.cap = cv2.VideoCapture(0)
         self.cap.set(3, resolution[0])
         self.cap.set(4, resolution[1])
