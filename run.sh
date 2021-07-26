@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 APP=$1
 shift
