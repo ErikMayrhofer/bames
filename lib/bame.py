@@ -118,9 +118,22 @@ class Bame:
 
     def handle_events(self) -> List[Any]:
         unhandled_events = []
+
+        mouse_motion = None
+
+
+        # Pump events from pygame
         for event in pygame.event.get():
+            # See if there are bame-related events (Quit or sth) and if not add it to unhandled events.
             if not self.handle_event(event):
-                unhandled_events.append(event)
+                # Accumulate mouse-motion events into one single big mouse-motion
+                if event.type == pygame.MOUSEMOTION:
+                    mouse_motion = event # TODO: Mouse-Motion own deltax and deltay .... update them accordingly.
+                else:
+                    unhandled_events.append(event)
+
+        if mouse_motion is not None:
+            unhandled_events.append(mouse_motion)
         return unhandled_events
             
     def handle_event(self, event):
