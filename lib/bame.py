@@ -1,3 +1,4 @@
+from lib.barameters import Barameters
 from typing import Type, Any
 import pygame
 from .util.keyframes import Keyframes
@@ -7,6 +8,7 @@ class TickContext:
     fps: float
     delta_ms: int
     screen: Any
+    barameters: Barameters
 
     temp_game_field: Any
 
@@ -54,6 +56,7 @@ class SceneWithBarser:
 
 class Bame:
     def __init__(self, classname: Type):
+        self.barameters = Barameters()
         self.game_instance = classname()
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
@@ -62,7 +65,7 @@ class Bame:
 
     def run(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((640, 480), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((640, 480), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
 
         self.start_loop()
 
@@ -84,6 +87,7 @@ class Bame:
             context.fps = 1000/delta_t
             context.delta_ms = delta_t
             context.screen = self.screen
+            context.barameters = self.barameters
 
             self.screen.fill((0, 0, 0)) 
             

@@ -1,3 +1,5 @@
 #!/bin/bash
 
-PYTHONPATH=$(dirname $(readlink -f $0)) python $1
+APP=$1
+shift
+PYTHONPATH=$(dirname $(readlink -f $0)) python ${APP} $@
