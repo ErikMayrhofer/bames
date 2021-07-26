@@ -57,7 +57,7 @@ class Bicturetaker:
         if len(results) == 4:
             actual = np.zeros([4, 2], dtype=np.float32)
             for result in results:
-                print(result)
+                #print(result)
                 id = result.tag_id
                 if actual[id][0] != 0 or actual[id][1]:
                     return None
@@ -71,8 +71,8 @@ class Bicturetaker:
                 [img.shape[1], 0.0],
                 [0.0, 0.0]
             ])
-            print(actual)
-            print(target)
+            #print(actual)
+            #print(target)
             matrix = cv2.getPerspectiveTransform(actual, target)
             distorted = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
 

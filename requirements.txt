@@ -3,4 +3,4 @@ pupil-apriltags==1.0.4
 icecream==2.1.1
 numpy==1.21.0
 pygame==2.0.1
-
+Box2D==2.3.10

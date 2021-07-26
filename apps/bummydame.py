@@ -19,16 +19,16 @@ class BummyDame:
         # print(f"FPS: {context.fps}")
 
 
-        print(context.temp_game_field)
+        shape = context.screen.get_size()
+        s = Surface((shape[0], shape[1]))
+        s.fill((127, 127, 127))
         if context.temp_game_field is not None:
-            print("Img: ")
-            print(context.temp_game_field.shape)
+            shape = context.temp_game_field.shape
+            position = (shape[1] / 2, shape[0] / 2)
+            pygame.draw.circle(s, (255, 0, 0), position, 128)
+            #pygame.surfarray.blit_array(s, context.temp_game_field)
+        
+        context.screen.blit(s, (0, 0, shape[0], shape[1]))
 
-            s = Surface((context.temp_game_field.shape[0], context.temp_game_field.shape[1]))
-            pygame.surfarray.blit_array(s, context.temp_game_field)
-            context.screen.blit(s, (0, 0, 500, 500))
-            
-
-        pass
-
-Bame(BummyDame).run()
+if __name__ == '__main__':
+    Bame(BummyDame).run()

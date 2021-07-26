@@ -25,8 +25,8 @@ class SplashScene:
         self.frames.advance(context.delta_ms/1000)
         val = self.frames.value()
         context.screen.fill((255,255,255))
-        context.screen.blit(self.splash_img, (0, 0, 640, 480))
-        context.screen.fill((val, val, val),special_flags=pygame.BLEND_MULT)
+        context.screen.blit(self.splash_img, (0, 0, 1920, 1080))
+        context.screen.fill((val, val, val), special_flags=pygame.BLEND_MULT)
         return self.frames.done()
 
     def unload(self):
@@ -35,7 +35,9 @@ class SplashScene:
 class SceneWithBarser:
     def __init__(self, sub_scene):
         self.sub_scene = sub_scene
-        # TODO: Barser is initiated here and therefore always scans....
+        self.tag_size = 192
+        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.tag_size, self.tag_size)) for num in range(4) ]
+        # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self):
         self.barser = Barser()
@@ -48,7 +50,15 @@ class SceneWithBarser:
             context.temp_game_field = _parsed_game.image
         else:
             context.temp_game_field = None
-        return self.sub_scene.tick(context)
+        done = self.sub_scene.tick(context)
+        shape = context.screen.get_size()
+        context.screen.blits([
+            (self.tags[0], (0, shape[1]-self.tag_size)),
+            (self.tags[1], (shape[0]-self.tag_size, shape[1]-self.tag_size)),
+            (self.tags[2], (shape[0]-self.tag_size, 0)),
+            (self.tags[3], (0, 0))
+        ])
+        return done
 
     def unload(self):
         self.barser.stop()
