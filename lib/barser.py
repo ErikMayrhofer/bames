@@ -5,13 +5,32 @@ import time
 
 class WorkerPayload:
     """
-    The actual 
+    The actual payload which is sent from the barser to the main Bame Thread.
+
+    This is created inside of "barser_worker(...)"
+
+    Fields:
+        image: Undistorted image
+        raw_image: Raw image from the camera
+        barsed_info (dict): Result which was generated from the Barsers - containing information about the game field.
     """
     def __init__(self, message: str, image):
         self.message = message
         self.image = image
 
 def barser_worker(pipe_connection: connection.Connection):
+    """
+    Worker method which runs in a seperate process. This creates the `WorkerBayload` and sends it to the `Barser`
+
+    Workflow:
+        Bicturetaker takes and processes image 
+          |
+          V
+        Barsers are run and create the game field which will be stored in barsed_info
+          |
+          V
+        WorkerBayload is constructed and sent over the pipe
+    """
     running = True
 
     taker = Bicturetaker()
@@ -22,8 +41,9 @@ def barser_worker(pipe_connection: connection.Connection):
             if res:
                 running = False
 
-        p = taker.take_bicture()
-        pipe_connection.send(WorkerPayload(message="Helo", image=p))
+        if running:
+            p = taker.take_bicture()
+            pipe_connection.send(WorkerPayload(message="Helo", image=p))
 
     print("Barser Worker shut down.")
 
@@ -40,8 +60,9 @@ class WorkerHandle:
     def stop(self):
         print("Stopping worker")
         self.pipe_connection.send(True)
-        self.process.join(2)
+        self.process.join(3)
         if self.process.is_alive():
+            print("Needing to terminate the process??")
             self.process.terminate()
         self.process.close()
 
