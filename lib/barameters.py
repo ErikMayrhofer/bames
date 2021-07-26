@@ -1,14 +1,26 @@
 import argparse
-import sys
+import toml
+
+def d(a, b):
+    return a if a is not None else b
 
 class Barameters:
     fullscreen: bool
+    tag_size: int
 
     def __init__(self):
+        file_settings = toml.load("bame.toml")
         parser = argparse.ArgumentParser(description='BAME! (von den Machern von Bame)') 
         parser.add_argument('--fullscreen', dest="fullscreen", action='store_true')
-        self.args = parser.parse_args()
-        self.fullscreen = self.args.fullscreen
+        parser.add_argument('--tag-size', dest="tag_size")
+
+        arg_settings = parser.parse_args()
+
+        merged_settings = {**file_settings, **vars(arg_settings)}
+        print("Merged Settings: ", merged_settings)
+
+        self.fullscreen = d(merged_settings["fullscreen"], False)
+        self.tag_size = int(d(merged_settings["tag_size"], 192))
 
 if __name__ == "__main__":
     barameters = Barameters()

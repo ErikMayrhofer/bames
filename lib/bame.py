@@ -1,3 +1,4 @@
+from lib import barameters
 from lib.barameters import Barameters
 from typing import Type, Any
 import pygame
@@ -33,10 +34,9 @@ class SplashScene:
         pass
 
 class SceneWithBarser:
-    def __init__(self, sub_scene):
+    def __init__(self, sub_scene, *, barameters: Barameters):
         self.sub_scene = sub_scene
-        self.tag_size = 192
-        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.tag_size, self.tag_size)) for num in range(4) ]
+        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (barameters.tag_size, barameters.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self):
@@ -53,9 +53,9 @@ class SceneWithBarser:
         done = self.sub_scene.tick(context)
         shape = context.screen.get_size()
         context.screen.blits([
-            (self.tags[0], (0, shape[1]-self.tag_size)),
-            (self.tags[1], (shape[0]-self.tag_size, shape[1]-self.tag_size)),
-            (self.tags[2], (shape[0]-self.tag_size, 0)),
+            (self.tags[0], (0, shape[1]-context.barameters.tag_size)),
+            (self.tags[1], (shape[0]-context.barameters.tag_size, shape[1]-context.barameters.tag_size)),
+            (self.tags[2], (shape[0]-context.barameters.tag_size, 0)),
             (self.tags[3], (0, 0))
         ])
         return done
@@ -71,7 +71,7 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance)]
+        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
 
     def run(self):
         pygame.init()
