@@ -43,8 +43,8 @@ def barser_worker(pipe_connection: connection.Connection):
                 running = False
 
         if running:
-            d = taker.take_bicture()
-            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=d["img"]))
+            d: dict = taker.take_bicture()
+            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info=None))
 
     print("Barser Worker shut down.")
 

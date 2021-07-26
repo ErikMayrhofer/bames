@@ -36,23 +36,6 @@ class SplashScene:
     def unload(self):
         pass
 
-class SetupScene:
-    def __init__(self):
-        self.taker = Bicturetaker()
-
-    def load(self):
-        pass
-
-    def tick(self, context: TickContext):
-        d = self.taker.take_bicture()
-        if d["raw"] is not None:
-            img = np.swapaxes(d["raw"], 0, 1)
-            s = pygame.pixelcopy.make_surface(img)
-            context.screen.blit(s, (0, 0)) 
-
-    def unload(self):
-        del self.taker
-
 class InitTagsScene:
     def __init__(self):
         self.tag_size = 192
@@ -65,10 +48,17 @@ class InitTagsScene:
 
     def tick(self, context: TickContext) -> bool:
         _parsed_game = self.barser.get_bayload()
-        if _parsed_game and _parsed_game.image is not None and self.found:
-            return True
-        if _parsed_game and _parsed_game.image is not None and not self.found:
-            self.found = True
+        if _parsed_game:
+            if _parsed_game.image is not None and self.found:
+                return True
+            if _parsed_game.image is not None and not self.found:
+                self.found = True
+            else:
+                self.found = False
+            if _parsed_game.raw_image is not None:
+                img = np.swapaxes(_parsed_game.raw_image, 0, 1)
+                s = pygame.pixelcopy.make_surface(img)
+                context.screen.blit(s, (0, 0))
         else:
             self.found = False
         shape = context.screen.get_size()
@@ -150,7 +140,7 @@ class Bame:
             context.barameters = self.barameters
             context.events = self.handle_events()
 
-            print(f"Unhandled Events {context.events}")
+            #print(f"Unhandled Events {context.events}")
 
             self.screen.fill((0, 0, 0)) 
             

@@ -55,6 +55,9 @@ class Bicturetaker:
 
         results = [result for result in results if result.tag_id in range(4)]
 
+        for result in results:
+            cv2.fillPoly(img, np.int32([result.corners]), (255, 255, 255))
+
         if len(results) == 4:
             actual = np.zeros([4, 2], dtype=np.float32)
             for result in results:
