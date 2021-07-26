@@ -60,7 +60,7 @@ class Bicturetaker:
                 #print(result)
                 id = result.tag_id
                 if actual[id][0] != 0 or actual[id][1]:
-                    return None
+                    return { "raw": img }
                 actual[id] = result.corners[id]
 
             self.last_results = results
@@ -76,10 +76,13 @@ class Bicturetaker:
             matrix = cv2.getPerspectiveTransform(actual, target)
             distorted = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
 
-            return distorted
+            return { "raw": img, "img": distorted}
         
         last_result = None
-        return None
+        return { "raw": img }
+
+    def __del__(self):
+        self.cap.release()
 
 
 def main():

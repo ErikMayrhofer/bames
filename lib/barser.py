@@ -14,9 +14,10 @@ class WorkerPayload:
         raw_image: Raw image from the camera
         barsed_info (dict): Result which was generated from the Barsers - containing information about the game field.
     """
-    def __init__(self, message: str, image):
-        self.message = message
+    def __init__(self, raw_image, image, barsed_info):
+        self.raw_image = raw_image
         self.image = image
+        self.barsed_info = barsed_info
 
 def barser_worker(pipe_connection: connection.Connection):
     """
@@ -42,8 +43,8 @@ def barser_worker(pipe_connection: connection.Connection):
                 running = False
 
         if running:
-            p = taker.take_bicture()
-            pipe_connection.send(WorkerPayload(message="Helo", image=p))
+            d = taker.take_bicture()
+            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=d["img"]))
 
     print("Barser Worker shut down.")
 
