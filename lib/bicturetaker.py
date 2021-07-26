@@ -1,4 +1,5 @@
 import cv2
+from typing import Dict
 from pupil_apriltags import Detector
 import numpy as np
 
@@ -18,7 +19,7 @@ class Bicturetaker:
         self.last_results = None
 
 
-    def take_bicture(self):
+    def take_bicture(self) -> Dict:
         """
         Takes a 🅱️icture, analyzes it for Apriltags and stretches it.
         Currently searches for 16h5 tags with IDs 0-3 and stretches it as follows:
