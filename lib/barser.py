@@ -52,17 +52,25 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
 
     taker = Bicturetaker()
 
+
+    print("h2", pipe_connection)
     while running:
-        print("...... WORKK")
+        print("...... WORKK ", running)
         if pipe_connection.poll(0):
             res = pipe_connection.recv()
+            print("Recv: ", res)
             if res:
                 running = False
 
         if running:
             print("barser_worker running ", barser_methods)
             d = taker.take_bicture()
+            print("Begin send")
+            
+            #Todo. This blocks until someone reads. maybe change that behaviour.
             pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info={}))
+            print("End send")
+
 
     print("Barser Worker shut down.")
 
@@ -79,7 +87,12 @@ class WorkerHandle:
     def stop(self):
         print("Stopping worker")
         self.pipe_connection.send(True)
-        self.process.join(3)
+
+        # Read images which remain...
+        while self.pipe_connection.poll(1):
+            self.pipe_connection.recv()
+
+        self.process.join(1)
         if self.process.is_alive():
             print("Needing to terminate the process??")
             self.process.terminate()

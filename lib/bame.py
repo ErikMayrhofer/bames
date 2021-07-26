@@ -106,7 +106,10 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [SplashScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
+        self.scenes = [
+                # SplashScene(), 
+                # InitTagsScene(), 
+                SceneWithBarser(self.game_instance, barameters=self.barameters)]
 
     def run(self):
         pygame.init()
@@ -126,6 +129,8 @@ class Bame:
         clock = pygame.time.Clock()
 
         self.running = True
+
+        self.scenes[0].load()
         while self.running:
             delta_t = clock.tick(60)
             context = TickContext()
