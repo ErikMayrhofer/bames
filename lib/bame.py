@@ -23,7 +23,7 @@ class SplashScene:
         self.frames.advance(context.delta_ms/1000)
         val = self.frames.value()
         context.screen.fill((255,255,255))
-        context.screen.blit(self.splash_img, (0, 0, 640, 480))
+        context.screen.blit(self.splash_img, (0, 0, 1920, 1080))
         context.screen.fill((val, val, val), special_flags=pygame.BLEND_MULT)
         return self.frames.done()
 
@@ -33,7 +33,7 @@ class SplashScene:
 class SceneWithBarser:
     def __init__(self, sub_scene):
         self.sub_scene = sub_scene
-        self.tag_size = 48
+        self.tag_size = 192
         self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.tag_size, self.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
@@ -49,14 +49,13 @@ class SceneWithBarser:
         else:
             context.temp_game_field = None
         done = self.sub_scene.tick(context)
-        if context.temp_game_field is not None:
-            shape = context.temp_game_field.shape
-            context.screen.blits([
-                (self.tags[0], (0, shape[0]-self.tag_size)),
-                (self.tags[1], (shape[1]-self.tag_size, shape[0]-self.tag_size)),
-                (self.tags[2], (shape[1]-self.tag_size, 0)),
-                (self.tags[3], (0, 0))
-            ])
+        shape = context.screen.get_size()
+        context.screen.blits([
+            (self.tags[0], (0, shape[1]-self.tag_size)),
+            (self.tags[1], (shape[0]-self.tag_size, shape[1]-self.tag_size)),
+            (self.tags[2], (shape[0]-self.tag_size, 0)),
+            (self.tags[3], (0, 0))
+        ])
         return done
 
     def unload(self):
@@ -73,7 +72,7 @@ class Bame:
 
     def run(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((640, 480), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
 
         self.start_loop()
 
