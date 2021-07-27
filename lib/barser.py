@@ -83,8 +83,8 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
             image = d["img"] if "img" in d else None
             barsed_info = None
             if image is not None:
-                cv2.imshow("DBG", image)
-                cv2.waitKey(1)
+                # cv2.imshow("DBG", image)
+                # cv2.waitKey(1)
                 print("[BW] barser_worker running ", barser_methods)
                 barsed_info = {}
                 for method in barser_methods:
