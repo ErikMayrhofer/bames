@@ -1,5 +1,5 @@
 from multiprocessing import Process, Pipe, connection
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from lib.bicturetaker import Bicturetaker
 import time
 
@@ -12,6 +12,9 @@ class BarserMethod:
     def __init__(self, fun) -> None:
         self.fun = fun
         pass
+
+    def run(self, *, undistorted_image, parsed_data):
+        self.fun(undistorted_image, parsed_data)
 
 def barser(fun):
     """
@@ -59,10 +62,19 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
                 running = False
 
         if running:
-            print("### barser_worker running ", barser_methods)
             d = taker.take_bicture()
-            #Todo. This blocks until someone reads. maybe change that behaviour. Maybe a Queue would be a better option here.
-            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info={}))
+            image = d["img"] if "img" in d else None
+            barsed_info = None
+            if image is not None:
+                print("### barser_worker running ", barser_methods)
+                barsed_info = {}
+                for method in barser_methods:
+                    method.run(
+                            undistorted_image=d["img"],
+                            parsed_data=barsed_info
+                            )
+                #Todo. This blocks until someone reads. maybe change that behaviour. Maybe a Queue would be a better option here.
+                pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=image, barsed_info=barsed_info))
 
     pipe_connection.close()
 
@@ -99,6 +111,9 @@ class WorkerHandle:
             print("process.join(1) did not succeed.")
         self.process.close()
 
+class BarsedWithTime:
+    data: WorkerPayload
+    time: float
 
 class Barser:
     """
@@ -106,13 +121,11 @@ class Barser:
     """
 
     handle: Optional[WorkerHandle]
-    last_barsed: Optional[WorkerPayload]
-    last_barsed_time: Optional[float]
+    last_barsed: Optional[BarsedWithTime]
     barser_methods: List[BarserMethod]
     def __init__(self, game_instance):
         self.handle = None
         self.last_barsed = None
-        self.last_barsed_time = None
 
         # Find all properties of type BarserMethod in the game_instance. 
         # Methods marked with @barser are also turned into BarserMethods
@@ -130,31 +143,22 @@ class Barser:
         self.handle = WorkerHandle(self.barser_methods)
         pass
 
-    def get_bayload(self) -> Optional[WorkerPayload]:
+    def get_bayload(self) -> Optional[BarsedWithTime]:
         """
         Last workload sent by the worker process. None if None was received yet.
         """
         assert self.handle is not None
         
-        data = None
+        data: Optional[WorkerPayload] = None
         while self.handle.pipe_connection.poll(0):
             data = self.handle.pipe_connection.recv()
 
         if data is not None:
-            self.last_barsed = data
-            self.last_barsed_time = time.time()
-            
+            bwt = BarsedWithTime()
+            bwt.data = data
+            bwt.time = time.time()
+            self.last_barsed = bwt
         return self.last_barsed
-
-    def get_bayload_age(self) -> Optional[float]:
-        """
-        Payload time in seconds. None if no payload was received yet.
-        """
-        assert self.handle is not None
-
-        if self.last_barsed_time is None:
-            return None
-        return time.time() - self.last_barsed_time
 
     def stop(self):
         """

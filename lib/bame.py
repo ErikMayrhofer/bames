@@ -1,18 +1,22 @@
+from time import time
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
-from typing import Type, Any, List
+from typing import Type, Any, List, Dict
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
 import numpy as np
+
+class BarsedContext:
+    data: Dict
+    age: float
+    image: Any
 
 class TickContext:
     fps: float
     delta_ms: int
     screen: Any
     barameters: Barameters
-
-    temp_game_field: Any
 
     events: List[Any]
 
@@ -79,13 +83,18 @@ class SceneWithBarser:
         self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
-        _parsed_game = self.barser.get_bayload()
-        _parsed_age = self.barser.get_bayload_age()
-        if _parsed_game:
-            context.temp_game_field = _parsed_game.image
+        next_scene = False
+        parsed_game = self.barser.get_bayload()
+        if parsed_game:
+            barsed_context = BarsedContext()
+            barsed_context.age = time() - parsed_game.time
+            barsed_context.data = parsed_game.data.barsed_info
+            next_scene = self.sub_scene.tick(context, barsed_context)
         else:
-            context.temp_game_field = None
-        next_scene = self.sub_scene.tick(context)
+            print("Waiting for barser to do something....")
+            # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
+            pass
+
         shape = context.screen.get_size()
         context.screen.blits([
             (self.tags[0], (0, shape[1]-context.barameters.tag_size)),
