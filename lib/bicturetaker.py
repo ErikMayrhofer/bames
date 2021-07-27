@@ -31,6 +31,22 @@ def extrude_corner(center_current: Tuple[int, int], corner: Tuple[int, int]):
 
     return actual_corner
 
+class Smoother:
+    history: List[np.ndarray] #ndarray is [4,2]
+    def __init__(self) -> None:
+        self.history = []
+
+    def push(self, points: np.ndarray): 
+        """
+        points: [4,2]
+        """
+        self.history.append(points)
+        if len(self.history) > 5:
+            self.history.pop(0)
+
+    def points(self) -> List[Tuple[int, int]]:
+        return np.average(self.history, 0)
+
 class Bicturetaker:
 
     def __init__(self, resolution=(1920, 1080), family='tag16h5', *, cam_index):
@@ -46,6 +62,8 @@ class Bicturetaker:
                         decode_sharpening=0.25,
                         debug=0)
         self.last_results = None
+
+        self.smoother = Smoother()
 
 
     def take_bicture(self) -> Dict:
@@ -100,6 +118,8 @@ class Bicturetaker:
 
             self.last_results = results
 
+            self.smoother.push(actual)
+
             target = np.float32([
                 [0.0, self.resolution[1]],
                 [self.resolution[0], self.resolution[1]],
@@ -108,7 +128,7 @@ class Bicturetaker:
             ])
             #print(actual)
             #print(target)
-            matrix = cv2.getPerspectiveTransform(actual, target)
+            matrix = cv2.getPerspectiveTransform(self.smoother.points(), target)
             distorted = cv2.warpPerspective(img, matrix, self.resolution)
 
             return { "raw": img, "img": distorted}
