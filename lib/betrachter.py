@@ -140,6 +140,11 @@ def detect_stuff(mat):
 
             # TODO: Intersect borders[idx_a] and borders[idx_b]
             # TODO: Save the resulting point in vertices
+        
+        # TODO: Threshold measures if the contour does not in fact belong to a recangle:
+        #  * Error measure in association with groups
+        #  * Check if total area is at least n% of the area of the bounding box
+
 
         #TODO Add Vertices to a greater collection outside
 
@@ -159,7 +164,7 @@ def wait_for_esc():
 if __name__ == "__main__":
     cap = cv2.VideoCapture(2)
 
-    detect_stuff(cv2.imread("test2.png"))
+    detect_stuff(cv2.imread("test4.png"))
     wait_for_esc()
     # detect_stuff(cv2.imread("test2.png"))
     # wait_for_esc()
