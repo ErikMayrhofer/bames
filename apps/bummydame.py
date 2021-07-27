@@ -11,7 +11,7 @@ def barse_squares(image, field):
     mask = cv2.inRange(img_hsv, (80, 31, 31), (100, 255,255))
     contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if contours:
-        [print(cv2.contourArea(contour)) for contour in contours]
+        # [print(cv2.contourArea(contour)) for contour in contours]
         cnt = sorted(contours, key=cv2.contourArea, reverse=True)[0]
         cv2.drawContours(image, [cnt], 0, (0,0,255), 3)
         x,y,w,h = cv2.boundingRect(cnt)
