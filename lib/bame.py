@@ -5,6 +5,7 @@ import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
 import numpy as np
+import cv2
 
 class TickContext:
     fps: float
@@ -53,7 +54,8 @@ class InitTagsScene:
             self.found = True
         else:
             self.found = False
-        img = np.swapaxes(d["raw"], 0, 1)
+        img = cv2.cvtColor(d["raw"], cv2.COLOR_BGR2RGB)
+        img = np.swapaxes(img, 0, 1)
         s = pygame.pixelcopy.make_surface(img)
         context.screen.blit(s, (0, 0))
         shape = context.screen.get_size()

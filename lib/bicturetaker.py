@@ -7,8 +7,9 @@ class Bicturetaker:
 
     def __init__(self, resolution=(1920, 1080), family='tag16h5'):
         self.cap = cv2.VideoCapture(0)
-        self.cap.set(3, resolution[0])
-        self.cap.set(4, resolution[1])
+        self.resolution = resolution
+        self.cap.set(3, self.resolution[0])
+        self.cap.set(4, self.resolution[1])
         self.detector = Detector(families=family,
                         nthreads=8,
                         quad_decimate=2.0,
@@ -70,15 +71,15 @@ class Bicturetaker:
             self.last_results = results
 
             target = np.float32([
-                [0.0, img.shape[0]],
-                [img.shape[1], img.shape[0]],
-                [img.shape[1], 0.0],
+                [0.0, self.resolution[1]],
+                [self.resolution[0], self.resolution[1]],
+                [self.resolution[0], 0.0],
                 [0.0, 0.0]
             ])
             #print(actual)
             #print(target)
             matrix = cv2.getPerspectiveTransform(actual, target)
-            distorted = cv2.warpPerspective(img, matrix, (img.shape[1], img.shape[0]))
+            distorted = cv2.warpPerspective(img, matrix, self.resolution)
 
             return { "raw": img, "img": distorted}
         

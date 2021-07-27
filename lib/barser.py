@@ -2,6 +2,7 @@ from multiprocessing import Process, Pipe, connection
 from typing import Optional
 from lib.bicturetaker import Bicturetaker
 import time
+import cv2
 
 class WorkerPayload:
     """
@@ -44,7 +45,19 @@ def barser_worker(pipe_connection: connection.Connection):
 
         if running:
             d: dict = taker.take_bicture()
-            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info=None))
+
+            rect = None
+            if "img" in d:
+                img_hsv = cv2.cvtColor(d["img"], cv2.COLOR_BGR2HSV)
+                mask = cv2.inRange(img_hsv, (80, 31, 31), (100, 255,255))
+                contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if contours:
+                    cnt = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+                    cv2.drawContours(d["img"], [cnt], 0, (0,0,255), 3)
+                    x,y,w,h = cv2.boundingRect(cnt)
+                    rect = (x, y), (x + w, y + h)
+
+            pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info={ "rect": rect }))
 
     print("Barser Worker shut down.")
 

@@ -1,6 +1,8 @@
+import numpy as np
 from lib import Bame, TickContext
 import pygame
 from pygame.surface import Surface
+import cv2
 
 class BummyDame:
     
@@ -20,13 +22,12 @@ class BummyDame:
 
 
         shape = context.screen.get_size()
-        s = Surface((shape[0], shape[1]))
+        s = Surface(shape)
         s.fill((127, 127, 127))
         if context.temp_game_field is not None:
-            shape = context.temp_game_field.shape
-            position = (shape[1] / 2, shape[0] / 2)
-            pygame.draw.circle(s, (255, 0, 0), position, 128)
-            #pygame.surfarray.blit_array(s, context.temp_game_field)
+            img = np.swapaxes(context.temp_game_field, 0, 1)
+            s = pygame.pixelcopy.make_surface(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            print(s.get_size())
         
         context.screen.blit(s, (0, 0, shape[0], shape[1]))
 
