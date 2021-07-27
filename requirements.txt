@@ -5,3 +5,4 @@ numpy==1.21.0
 pygame==2.0.1
 Box2D==2.3.10
 toml==0.10.2
+pymunk==6.0.0
