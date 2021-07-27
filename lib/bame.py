@@ -1,3 +1,5 @@
+import ctypes
+import os
 from time import time
 from lib import barameters
 from lib.bicturetaker import Bicturetaker
@@ -127,6 +129,9 @@ class Bame:
                 ]
 
     def run(self):
+        if os.name == 'nt':
+            ctypes.windll.user32.SetProcessDPIAware()
+
         pygame.init()
         self.game_instance.load()
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
