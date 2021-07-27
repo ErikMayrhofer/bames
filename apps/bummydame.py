@@ -4,19 +4,19 @@ from lib import Bame, TickContext
 import pygame
 from pygame.surface import Surface
 import cv2
-from lib.barser import barser
+from lib.barser import BarserMethod, barser
 
+def barse_squares(image, field):
+    print("Barse Squares epic many")
+    field["öha"] = ["square", "square"]
+    pass
 
 class BummyDame:
     def load(self) -> None:
         print("FONT INIT:")
         self.font = pygame.font.SysFont(None, 24)
     
-    @barser
-    def barse_squares(image, field):
-        print("Barse Squares epic many")
-        field["öha"] = ["square", "square"]
-        pass
+    barse_squares = BarserMethod(barse_squares)
 
     # @barser
     # def barse_specials(image, field):
