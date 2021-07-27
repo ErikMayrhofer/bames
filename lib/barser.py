@@ -54,7 +54,7 @@ class BarserOptions:
         return options
 
 
-def barser_worker(pipe_connection: connection.Connection, barser_methods: List[BarserMethod], *, options: BarserOptions):
+def barser_worker(pipe_connection: connection.Connection, barser_methods: List[BarserMethod], options: BarserOptions):
     """
     Worker method which runs in a seperate process. This creates the `WorkerBayload` and sends it to the `Barser`
 
@@ -71,6 +71,7 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
 
     taker = Bicturetaker(cam_index=options.camera_index)
 
+    print("[BW] Worker started...")
     while running:
         if pipe_connection.poll(0):
             res = pipe_connection.recv()
@@ -83,8 +84,8 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
             barsed_info = None
             if image is not None:
                 cv2.imshow("DBG", image)
-                cv2.waitKey(0)
-                print("### barser_worker running ", barser_methods)
+                cv2.waitKey(1)
+                print("[BW] barser_worker running ", barser_methods)
                 barsed_info = {}
                 for method in barser_methods:
                     method.run(
@@ -94,6 +95,7 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
                 #Todo. This blocks until someone reads. maybe change that behaviour. Maybe a Queue would be a better option here.
                 pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=image, barsed_info=barsed_info))
 
+    print("[BW] Worker closing...")
     pipe_connection.close()
 
 class WorkerHandle:
