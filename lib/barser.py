@@ -52,35 +52,32 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
 
     taker = Bicturetaker()
 
-
-    print("h2", pipe_connection)
     while running:
-        print("...... WORKK ", running)
         if pipe_connection.poll(0):
             res = pipe_connection.recv()
-            print("Recv: ", res)
             if res:
                 running = False
 
         if running:
-            print("barser_worker running ", barser_methods)
+            print("### barser_worker running ", barser_methods)
             d = taker.take_bicture()
-            print("Begin send")
-            
-            #Todo. This blocks until someone reads. maybe change that behaviour.
+            #Todo. This blocks until someone reads. maybe change that behaviour. Maybe a Queue would be a better option here.
             pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=(d["img"] if "img" in d else None), barsed_info={}))
-            print("End send")
 
-
-    print("Barser Worker shut down.")
-
-
+    pipe_connection.close()
 
 class WorkerHandle:
     """
     Unified access to the worker process.
+
+    This class does all the multiprocessing magic.
     """
-    def __init__(self, pipe_connection: connection.Connection, process: Process):
+    def __init__(self, barser_methods: List[BarserMethod]):
+
+        pipe_connection, child_pipe = Pipe()
+        process = Process(target=barser_worker, args=(child_pipe, barser_methods))
+        process.start()
+
         self.pipe_connection = pipe_connection
         self.process = process
 
@@ -89,13 +86,17 @@ class WorkerHandle:
         self.pipe_connection.send(True)
 
         # Read images which remain...
-        while self.pipe_connection.poll(1):
-            self.pipe_connection.recv()
+        print("Waiting for thread to shut down.")
+        while True:
+            try:
+                self.pipe_connection.recv()
+            except EOFError:
+                break
+
 
         self.process.join(1)
         if self.process.is_alive():
-            print("Needing to terminate the process??")
-            self.process.terminate()
+            print("process.join(1) did not succeed.")
         self.process.close()
 
 
@@ -126,10 +127,7 @@ class Barser:
         """
         Actually launches the thread. Do not forget to call stop() at the end.
         """
-        pipe_connection, child_pipe = Pipe()
-        process = Process(target=barser_worker, args=(child_pipe, self.barser_methods))
-        process.start()
-        self.handle = WorkerHandle(pipe_connection, process)
+        self.handle = WorkerHandle(self.barser_methods)
         pass
 
     def get_bayload(self) -> Optional[WorkerPayload]:
