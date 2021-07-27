@@ -4,7 +4,7 @@ from lib import Bame, TickContext
 import pygame
 from pygame.surface import Surface
 import cv2
-from lib.barser import BarserMethod, barser
+from lib.barser import BarserMethod
 
 def barse_squares(image, field):
     print("Barse Squares epic many")
@@ -17,12 +17,6 @@ class BummyDame:
         self.font = pygame.font.SysFont(None, 24)
     
     barse_squares = BarserMethod(barse_squares)
-
-    # @barser
-    # def barse_specials(image, field):
-        # field["öha"].append("circle")
-        # pass
-
 
     def tick(self, context: TickContext, barsed_context: BarsedContext):
         print("BummyDame tick with: ", barsed_context.data, barsed_context.age)

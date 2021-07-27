@@ -17,12 +17,13 @@ class BarserMethod:
     def run(self, *, undistorted_image, parsed_data):
         self.fun(undistorted_image, parsed_data)
 
-def barser(fun):
-    """
-    Decorator applied to methods to mark them as BarserMethods.
-    """
-    return BarserMethod(fun)
-
+# Decorators while pickling is broken on windows :(
+# def barser(fun):
+    # """
+    # Decorator applied to methods to mark them as BarserMethods.
+    # """
+    # return BarserMethod(fun)
+ 
 class WorkerPayload:
     """
     The actual payload which is sent from the barser to the main Bame Thread.
