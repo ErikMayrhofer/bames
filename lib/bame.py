@@ -1,19 +1,24 @@
+from time import time
+from lib import barameters
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
-from typing import Type, Any, List
+from typing import Type, Any, List, Dict
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser
 import numpy as np
 import cv2
 
+class BarsedContext:
+    data: Dict
+    age: float
+    image: Any
+
 class TickContext:
     fps: float
     delta_ms: int
     screen: Any
     barameters: Barameters
-
-    temp_game_field: Any
 
     events: List[Any]
 
@@ -77,17 +82,22 @@ class SceneWithBarser:
         # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self):
-        self.barser = Barser()
+        self.barser = Barser(self.sub_scene)
         self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
-        _parsed_game = self.barser.get_bayload()
-        _parsed_age = self.barser.get_bayload_age()
-        if _parsed_game:
-            context.temp_game_field = _parsed_game.image
+        next_scene = False
+        parsed_game = self.barser.get_bayload()
+        if parsed_game:
+            barsed_context = BarsedContext()
+            barsed_context.age = time() - parsed_game.time
+            barsed_context.data = parsed_game.data.barsed_info
+            next_scene = self.sub_scene.tick(context, barsed_context)
         else:
-            context.temp_game_field = None
-        next_scene = self.sub_scene.tick(context)
+            print("Waiting for barser to do something....")
+            # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
+            pass
+
         shape = context.screen.get_size()
         context.screen.blits([
             (self.tags[0], (0, shape[1]-context.barameters.tag_size)),
@@ -108,10 +118,16 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [SplashScene(), InitTagsScene(), SceneWithBarser(self.game_instance, barameters=self.barameters)]
+        self.scenes = ([] if self.barameters.quick_start else [
+                    SplashScene(), 
+                    InitTagsScene(), 
+                ]) + [
+                    SceneWithBarser(self.game_instance, barameters=self.barameters)
+                ]
 
     def run(self):
         pygame.init()
+        self.game_instance.load()
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
 
         self.start_loop()
@@ -128,6 +144,8 @@ class Bame:
         clock = pygame.time.Clock()
 
         self.running = True
+
+        self.scenes[0].load()
         while self.running:
             delta_t = clock.tick(60)
             context = TickContext()

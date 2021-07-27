@@ -87,6 +87,22 @@ class Bicturetaker:
         return { "raw": img }
 
     def __del__(self):
+        #======= TODO!!!!!!!!!! ==========
+        # WTF???? 
+        # When manually calling these fuckers everything works.
+        # When just calling del self.detector this crashes on linux.
+        print("0")
+        self.detector.libc.tag16h5_destroy.restype = None
+        self.detector.libc.tag16h5_destroy(self.detector.tag_families["tag16h5"])
+        print("A")
+        # ========= BIGGER TODO!!!!!!!!!!! ========
+        # This will leak.
+        # self.detector.libc.apriltag_detector_destroy(self.detector.tag_detector_ptr)
+        self.detector.tag_detector_ptr = None
+        print("B")
+        del self.detector
+
+        print("C")
         self.cap.release()
 
 
