@@ -92,6 +92,7 @@ class SceneWithBarser:
             barsed_context = BarsedContext()
             barsed_context.age = time() - parsed_game.time
             barsed_context.data = parsed_game.data.barsed_info
+            barsed_context.image = parsed_game.data.image
             next_scene = self.sub_scene.tick(context, barsed_context)
         else:
             print("Waiting for barser to do something....")
