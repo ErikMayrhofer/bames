@@ -25,8 +25,9 @@ class BummyDame:
     def tick(self, context: TickContext, barsed_context: BarsedContext):
         print("BummyDame tick with: ", barsed_context.data, barsed_context.age)
 
+        shape = context.screen.get_size()
         textimg = self.font.render(f'Age: {barsed_context.age}', True, (255, 255, 255))
-        context.screen.blit(textimg, (40, 40))
+        context.screen.blit(textimg, (shape[0]/2, shape[1]/2))
 
 if __name__ == '__main__':
     Bame(BummyDame).run()

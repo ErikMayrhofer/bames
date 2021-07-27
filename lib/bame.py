@@ -1,4 +1,5 @@
 from time import time
+from lib import barameters
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
 from typing import Type, Any, List, Dict
@@ -115,10 +116,12 @@ class Bame:
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = [
-                # SplashScene(), 
-                # InitTagsScene(), 
-                SceneWithBarser(self.game_instance, barameters=self.barameters)]
+        self.scenes = ([] if self.barameters.quick_start else [
+                    SplashScene(), 
+                    InitTagsScene(), 
+                ]) + [
+                    SceneWithBarser(self.game_instance, barameters=self.barameters)
+                ]
 
     def run(self):
         pygame.init()
