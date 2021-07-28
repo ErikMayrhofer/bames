@@ -1,7 +1,7 @@
 import ctypes
 import os
 from time import time
-from lib import barameters
+from lib.bicturemaker import Bicturemaker
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
 from typing import Type, Any, List, Dict
@@ -10,6 +10,9 @@ from .util.keyframes import Keyframes
 from .barser import Barser, BarserOptions
 import numpy as np
 import cv2
+
+class LoadContext:
+    bicturemaker: Bicturemaker
 
 class BarsedContext:
     data: Dict
@@ -30,7 +33,7 @@ class SplashScene:
         self.frames = Keyframes([(0, 0), (0.5, 255), (1.3, 255), (1.5, 0)])
 
 
-    def load(self):
+    def load(self, context: LoadContext):
         pass
 
     def tick(self, context: TickContext) -> bool:
@@ -51,7 +54,7 @@ class InitTagsScene:
         self.found = False
         self.bame = bame
 
-    def load(self):
+    def load(self, context: LoadContext):
         self.taker = Bicturetaker(cam_index=self.bame.barameters.camera_index)
 
     def tick(self, context: TickContext) -> bool:
@@ -85,7 +88,7 @@ class SceneWithBarser:
         self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.bame.barameters.tag_size, self.bame.barameters.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
-    def load(self):
+    def load(self, context: LoadContext):
         self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
         self.barser.launch()
 
@@ -135,8 +138,12 @@ class Bame:
             ctypes.windll.user32.SetProcessDPIAware()
 
         pygame.init()
-        self.game_instance.load()
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
+        self.bicturemaker = Bicturemaker(self.screen, self.barameters)
+
+        context = LoadContext()
+        context.bicturemaker = self.bicturemaker
+        self.game_instance.load(context)
 
         self.start_loop()
 
@@ -146,14 +153,18 @@ class Bame:
         if len(self.scenes) == 0:
             self.running = False
         else:
-            self.scenes[0].load()
+            context = LoadContext()
+            context.bicturemaker = self.bicturemaker
+            self.scenes[0].load(context)
 
     def start_loop(self):
         clock = pygame.time.Clock()
 
         self.running = True
 
-        self.scenes[0].load()
+        context = LoadContext()
+        context.bicturemaker = self.bicturemaker
+        self.scenes[0].load(context)
         while self.running:
             delta_t = clock.tick(60)
             context = TickContext()
@@ -162,6 +173,7 @@ class Bame:
             context.screen = self.screen
             context.barameters = self.barameters
             context.events = self.handle_events()
+            context.bicturemaker = self.bicturemaker
 
             #print(f"Unhandled Events {context.events}")
 
