@@ -121,7 +121,7 @@ def detect_rectangles(mat) -> List[np.ndarray]:
 
     cont_mat = np.zeros(mat.shape, np.uint8) 
     cv2.drawContours(cont_mat, contours, -1, (0, 0, 255), 1)
-    cv2.imshow("Contours: ", cont_mat)
+    # cv2.imshow("Contours: ", cont_mat)
 
 
     rectangles = []
@@ -299,7 +299,7 @@ class KalmanRects:
                 rect.push(new_rect)
                 return rect.current()
 
-        rect = KalmanRect()
+        rect = KalmanRect(5)
         rect.push(new_rect)
         self.rects.append(rect)
         return rect.current()
@@ -314,21 +314,31 @@ class KalmanRects:
             
 
 class KalmanRect:
-    def __init__(self) -> None:
+    def __init__(self, begin_with_invalidity) -> None:
         self.history = []
-        self.invalid_for = 0
+        self.invalid_for = begin_with_invalidity
     
     def push(self, rect):
         (cx, cy), w, h, a = rect
+
+        if len(self.history) > 0:
+            (acx, acy), aw, ah, aa = self.current()
+
+            dx, dy, dw, dh, da = cx-acx, cy-acy, w-aw, h-ah, a-aa
+            if dx > 10 or dy > 10 or dw > 5 or dh > 5 or da > (45/180*np.pi):
+                return
+
+        
+
+
 
         if len(rect) != 4:
             print(rectangle)
             raise Exception("REE")
         self.history.append((cx, cy, w, h, a))
-        self.invalid_for = 0
-        if len(self.history) > 5:
+        self.invalid_for = max(0, self.invalid_for - 1)
+        if len(self.history) > 20:
             self.history.pop(0)
-        pass
 
     def age(self):
         self.invalid_for += 1
