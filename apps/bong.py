@@ -1,8 +1,9 @@
+from lib.bicturemaker import Bicturemaker
 import pymunk
 from lib.barser import BarserMethod
 from lib.bolygonbetector import BolygonBetector
 import pygame
-from lib.bame import Bame, BarsedContext, TickContext
+from lib.bame import Bame, BarsedContext, LoadContext, TickContext
 import random
 import pygame.gfxdraw
 
@@ -18,7 +19,11 @@ class Bong:
 
     barse_red_lines = BarserMethod(barse_red_bolygons)
     
-    def load(self) -> None:
+    def load(self, context: LoadContext) -> None:
+        self.bicturemaker = context.bicturemaker
+        self.bicturemaker.set_origin(Bicturemaker.CENTER)
+        self.bicturemaker.set_scale(1/10)
+
         self.space = pymunk.Space()
 
         top = pymunk.Segment(self.space.static_body, (-10, 5), (10, 5), 0)
@@ -43,18 +48,11 @@ class Bong:
         self.space.step(context.delta_ms / 1000)
 
         resolution = context.screen.get_size()
-        origin = (resolution[0] / 2, resolution[1] / 2)
         scale = resolution[0] / 20
 
-        ball_position = self.__with_origin_and_scale(self.ball.position, origin, scale)
+        ball_position = self.bicturemaker.munk2game(self.ball.position)
         print(ball_position)
         pygame.gfxdraw.aacircle(context.screen, int(ball_position[0]), int(ball_position[1]), int(self.ball_radius * scale), (255, 0, 0))
-
-    def __with_origin_and_scale(self, point, origin, scale):
-        return (origin[0] + point[0] * scale, origin[1] - point[1] * scale)
-
-    def __without_origin_and_scale(self, point, origin, scale):
-        return ((point[0] - origin[0]) / scale, (origin[1] - point[1]) / scale)
 
 
 if __name__ == '__main__':
