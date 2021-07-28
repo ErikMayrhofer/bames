@@ -346,6 +346,24 @@ def wait_for_esc():
         if key == 27:
             break
 
+
+class BectangleRetector:
+    def __init__(self, **kwargs) -> None:
+        self.kalmanrects= KalmanRects(**kwargs)
+
+    def detect(self, image):
+        extracted = extract_colors(image)
+        rects = detect_rectangles(extracted)
+
+        self.kalmanrects.age()
+        for rect in rects:
+            self.kalmanrects.push(rect)
+        return self.last_rects()
+
+    def last_rects(self):
+        return [r.current() for r in self.kalmanrects.rects]
+
+
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
 
@@ -359,22 +377,14 @@ if __name__ == "__main__":
     # """
 
     angle = 0
-    kalman = KalmanRects()
+    detector = BectangleRetector()
     while True:
         _, img = cap.read()
         cv2.imshow("Image: ", img)
-        extracted = extract_colors(img)
-        rects = detect_rectangles(extracted)
 
-        kalman.age()
-        for rect in rects:
-            cv2.polylines(img, [rect_to_verts(rect).reshape((-1, 1, 2))], True, (255, 0, 255), 1)
-            kalman.push(rect)
+        for rect in detector.detect(img):
+            cv2.polylines(img, [rect_to_verts(rect).reshape((-1, 1, 2))], True, (255, 255, 255), 1)
 
-        for rect in kalman.rects:
-            cv2.polylines(img, [rect_to_verts(rect.current()).reshape((-1, 1, 2))], True, (255, 255, 255), 1)
-
-        # cv2.polylines(img, [rect_to_verts(((100, 100), 10, 40, angle)).reshape((-1, 1, 2))], True, (255, 255, 0), 1)
         cv2.imshow("Rect: ", img)
         angle += np.pi/180
 
