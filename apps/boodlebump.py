@@ -23,8 +23,6 @@ class BoodleBump:
     barse_red_lines = BarserMethod(barse_red_bolygons)
 
     def load(self) -> None:
-        pygame.init()
-
         self.space = pymunk.Space()
         self.space.gravity = (0, -9.81)
 
