@@ -1,4 +1,5 @@
 import ctypes
+from lib.bamepad import BamePadFactory, BamePadManager
 import os
 from time import time
 from lib import barameters
@@ -21,6 +22,7 @@ class TickContext:
     delta_ms: int
     screen: Any
     barameters: Barameters
+    bamepads: BamePadManager
 
     events: List[Any]
 
@@ -78,6 +80,47 @@ class InitTagsScene:
     def unload(self):
         del self.taker
 
+class BamePadScene:
+    factory: BamePadFactory
+    def __init__(self, bame: "Bame") -> None:
+        self.bame = bame
+        pass
+
+    def load(self):
+        self.factory = BamePadFactory()
+        
+        self.font = pygame.font.SysFont(None, 24)
+        pass
+
+    def tick(self, context: TickContext):
+        textimg = self.font.render(f'Press bottom symbol button (A) to join. Press it again to be ready', True, (255, 255, 255))
+        context.screen.blit(textimg, (0, 0))
+        textimg = self.font.render(f'Press right symbol button (B) to leave.', True, (255, 255, 255))
+        context.screen.blit(textimg, (0, 20))
+        textimg = self.font.render(f'Press right symbol button (B) to leave.', True, (255, 255, 255))
+        context.screen.blit(textimg, (0, 40))
+        textimg = self.font.render(f'Game starts when everyone is ready.', True, (255, 255, 255))
+        context.screen.blit(textimg, (0, 60))
+
+        can_start = len(self.factory.get_active_controllers()) > 0
+        for idx, parcel in enumerate(self.factory.get_active_controllers(), start=5):
+            textimg = self.font.render(f'{parcel.metadata.joystick.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
+            context.screen.blit(textimg, (0, idx*20))
+            if not parcel.ready:
+                can_start = False
+
+
+        for event in context.events:
+            if event.type == pygame.JOYBUTTONDOWN:
+                new_instance_id = event.instance_id
+                self.factory.handle_press(new_instance_id, event.button)
+
+        return can_start
+
+    def unload(self):
+        self.bame.bamepads = self.factory.build()
+        pass
+
 class SceneWithBarser:
     def __init__(self, bame: "Bame", *, sub_scene):
         self.sub_scene = sub_scene
@@ -126,9 +169,13 @@ class Bame:
         self.scenes = ([] if self.barameters.quick_start else [
                     SplashScene(self), 
                     InitTagsScene(self), 
-                ]) + [
+                ]) + (
+                        [BamePadScene(self)] if self.barameters.use_joystick else []
+                        ) + [
                     SceneWithBarser(self, sub_scene=self.game_instance)
                 ]
+
+        self.bamepads = None
 
     def run(self):
         if os.name == 'nt':
@@ -162,6 +209,7 @@ class Bame:
             context.screen = self.screen
             context.barameters = self.barameters
             context.events = self.handle_events()
+            context.bamepads = self.bamepads
 
             #print(f"Unhandled Events {context.events}")
 
@@ -204,4 +252,4 @@ class Bame:
         if event.type == pygame.WINDOWRESIZED:
             pygame.display.update()
             return True
-        return False
+

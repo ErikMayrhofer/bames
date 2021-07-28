@@ -9,6 +9,7 @@ class Barameters:
     tag_size: int
     quick_start: bool
     camera_index: int
+    use_joystick: bool
 
     def __init__(self):
         file_settings = toml.load("bame.toml")
@@ -17,6 +18,7 @@ class Barameters:
         parser.add_argument('--no-splash', dest="no_splash", action='store_true')
         parser.add_argument('--tag-size', dest="tag_size")
         parser.add_argument('--camera', dest="camera_index")
+        parser.add_argument('--joy', dest="use_joystick", action="store_true")
 
         arg_settings = parser.parse_args()
 
@@ -26,6 +28,7 @@ class Barameters:
         self.fullscreen = d(merged_settings["fullscreen"], False)
         self.quick_start = d(merged_settings["no_splash"], False)
         self.tag_size = int(d(merged_settings["tag_size"], 192))
+        self.use_joystick = d(merged_settings["use_joystick"], False)
         self.camera_index = int(d(merged_settings["camera_index"], 0))
 
 if __name__ == "__main__":
