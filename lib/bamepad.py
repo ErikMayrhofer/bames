@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Set
 import pygame
 from pygame.event import Event
 from pygame.joystick import Joystick
@@ -52,8 +52,8 @@ MAPS = {
             0: TOUCH_LEFT,
             1: TOUCH_RIGHT,
             2: BUTTON_SYMBOL_BOTTOM,
-            3: BUTTON_SYMBOL_LEFT,
-            4: BUTTON_SYMBOL_RIGHT,
+            3: BUTTON_SYMBOL_RIGHT,
+            4: BUTTON_SYMBOL_LEFT,
             5: BUTTON_SYMBOL_TOP,
             6: SHOULDER_LEFT,
             7: SHOULDER_RIGHT,
@@ -142,6 +142,7 @@ MAPS = {
 class JoystickMetadata:
     def __init__(self, joystick: Joystick) -> None:
         self.joystick = joystick
+        self.player_num = 0
         pass
 
     def map_button(self, raw_button: int):
@@ -152,7 +153,6 @@ class JoystickMetadata:
 
     def map_hat(self, raw_hat: int):
         return self.__map("HATS", raw_hat)
-
 
     def __map(self, type, raw):
         name = self.joystick.get_guid()
@@ -181,16 +181,19 @@ class BamePadManager:
         if event.type == pygame.JOYBUTTONUP or event.type == pygame.JOYBUTTONDOWN:
             joystick = self.joysticks[event.instance_id]
             event.button = joystick.map_button(event.button)
+            event.player = joystick.player_num
             if event.button is WEIRD_DISABLED_SHIT: 
                 return None
         if event.type == pygame.JOYAXISMOTION:
             joystick = self.joysticks[event.instance_id]
             event.axis = joystick.map_axes(event.axis)
+            event.player = joystick.player_num
             if event.axis is WEIRD_DISABLED_SHIT: 
                 return None
         if event.type == pygame.JOYHATMOTION:
             joystick = self.joysticks[event.instance_id]
             event.hat = joystick.map_hat(event.hat)
+            event.player = joystick.player_num
             if event.hat is WEIRD_DISABLED_SHIT: 
                 return None
 
@@ -212,8 +215,10 @@ class JoystickFactoryParcel:
     
 class BamePadFactory:
     joysticks: Dict[int, JoystickFactoryParcel]
+    player_nums: Set[int]
     def __init__(self) -> None:
         self.joysticks = {}
+        self.player_nums = set() 
         for x in range (js.get_count()):
             joystick = JoystickFactoryParcel(x)
             self.joysticks[joystick.metadata.joystick.get_instance_id()] = joystick
@@ -233,10 +238,21 @@ class BamePadFactory:
         if mapped_button == BUTTON_SYMBOL_BOTTOM:
             if joystick.active:
                 joystick.ready = True
-            joystick.active = True
+            else:
+                joystick.active = True
+                joystick.metadata.player_num = self.get_free_num()
+                self.player_nums.add(joystick.metadata.player_num)
         if mapped_button == BUTTON_SYMBOL_RIGHT:
             joystick.active = False
             joystick.ready = False
+            self.player_nums.discard(joystick.metadata.player_num)
+            joystick.metadata.player_num = -1
+
+    def get_free_num(self) -> int:
+        for x in range(1, 20): # <- cap
+            if x not in self.player_nums:
+                return x
+        raise Exception("Too many players :(... Just raise the cap in bamepad.py")
 
     def get_active_controllers(self) -> List[JoystickFactoryParcel]:
         return [x for x in self.joysticks.values() if x.active]

@@ -18,19 +18,20 @@ class JoyStickTest:
         for event in context.events:
             if event.type == pygame.JOYBUTTONDOWN:
                 print(event)
-                self.values[event.button]=True
+                self.values[f"{event.player} - {event.button}"]=True
 
             if event.type == pygame.JOYBUTTONUP:
                 print(event)
-                self.values[event.button]=False
+                self.values[f"{event.player} - {event.button}"]=False
 
             if event.type == pygame.JOYAXISMOTION:
                 print(event)
-                self.values[event.axis]=event.value
+                self.values[f"{event.player} - {event.axis}"]=event.value
 
             if event.type == pygame.JOYHATMOTION:
                 print(event)
-                self.values[event.hat]=event.value
+                self.values[f"{event.player} - {event.hat}"]=event.value
+
 
 if __name__ == '__main__':
     Bame(JoyStickTest).run()

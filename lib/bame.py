@@ -104,7 +104,7 @@ class BamePadScene:
 
         can_start = len(self.factory.get_active_controllers()) > 0
         for idx, parcel in enumerate(self.factory.get_active_controllers(), start=5):
-            textimg = self.font.render(f'{parcel.metadata.joystick.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
+            textimg = self.font.render(f'Player {parcel.metadata.player_num}: {parcel.metadata.joystick.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
             context.screen.blit(textimg, (0, idx*20))
             if not parcel.ready:
                 can_start = False
