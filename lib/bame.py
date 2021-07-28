@@ -7,7 +7,7 @@ from lib.barameters import Barameters
 from typing import Type, Any, List, Dict
 import pygame
 from .util.keyframes import Keyframes
-from .barser import Barser
+from .barser import Barser, BarserOptions
 import numpy as np
 import cv2
 
@@ -25,7 +25,7 @@ class TickContext:
     events: List[Any]
 
 class SplashScene:
-    def __init__(self):
+    def __init__(self, _: "Bame"):
         self.splash_img = pygame.image.load("img/Logo.jpg")
         self.frames = Keyframes([(0, 0), (0.5, 255), (1.3, 255), (1.5, 0)])
 
@@ -45,13 +45,14 @@ class SplashScene:
         pass
 
 class InitTagsScene:
-    def __init__(self):
-        self.tag_size = 192
+    def __init__(self, bame: "Bame"):
+        self.tag_size = bame.barameters.tag_size
         self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.tag_size, self.tag_size)) for num in range(4) ]
         self.found = False
+        self.bame = bame
 
     def load(self):
-        self.taker = Bicturetaker()
+        self.taker = Bicturetaker(cam_index=self.bame.barameters.camera_index)
 
     def tick(self, context: TickContext) -> bool:
         d = self.taker.take_bicture()
@@ -78,13 +79,14 @@ class InitTagsScene:
         del self.taker
 
 class SceneWithBarser:
-    def __init__(self, sub_scene, *, barameters: Barameters):
+    def __init__(self, bame: "Bame", *, sub_scene):
         self.sub_scene = sub_scene
-        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (barameters.tag_size, barameters.tag_size)) for num in range(4) ]
+        self.bame = bame
+        self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.bame.barameters.tag_size, self.bame.barameters.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self):
-        self.barser = Barser(self.sub_scene)
+        self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
         self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
@@ -122,10 +124,10 @@ class Bame:
         # Pass Barsers to SceneWithBarser
         self.running = False
         self.scenes = ([] if self.barameters.quick_start else [
-                    SplashScene(), 
-                    InitTagsScene(), 
+                    SplashScene(self), 
+                    InitTagsScene(self), 
                 ]) + [
-                    SceneWithBarser(self.game_instance, barameters=self.barameters)
+                    SceneWithBarser(self, sub_scene=self.game_instance)
                 ]
 
     def run(self):

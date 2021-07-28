@@ -1,12 +1,56 @@
 import cv2
-from typing import Dict
+from typing import Dict, List, Tuple
 from pupil_apriltags import Detector
 import numpy as np
 
+def extrude_corner(center_current: Tuple[int, int], corner: Tuple[int, int]):
+    """
+    Returns a point relative to the current tag which responds to the outer edge of the white rim.
+
+    Center = C
+    Eck = E
+
+    C>O := Vector from C to O
+    X>Y = Y - X
+
+    OC + CE * 4/3 = OC + CA | - OC
+    (OE-OC) * 4/3 = OA-OC 
+    OC + 4/3OE - 4/3OC = OA
+
+    (1 - 4/3)OC + 4/3OE = OA
+    -1/3OC + 4/3OE = OA
+
+    """
+
+    # actual_corner = np.array(center_current)*(-1/3) + np.array(corner)*4/3
+
+    actual_corner = (
+            center_current[0] * (-1/3) + corner[0] * 4/3,
+            center_current[1] * (-1/3) + corner[1] * 4/3,
+            )
+
+    return actual_corner
+
+class Smoother:
+    history: List[np.ndarray] #ndarray is [4,2]
+    def __init__(self) -> None:
+        self.history = []
+
+    def push(self, points: np.ndarray): 
+        """
+        points: [4,2]
+        """
+        self.history.append(points)
+        if len(self.history) > 5:
+            self.history.pop(0)
+
+    def points(self) -> List[Tuple[int, int]]:
+        return np.average(self.history, 0)
+
 class Bicturetaker:
 
-    def __init__(self, resolution=(1920, 1080), family='tag16h5'):
-        self.cap = cv2.VideoCapture(0)
+    def __init__(self, resolution=(1920, 1080), family='tag16h5', *, cam_index):
+        self.cap = cv2.VideoCapture(cam_index)
         self.resolution = resolution
         self.cap.set(3, self.resolution[0])
         self.cap.set(4, self.resolution[1])
@@ -18,6 +62,8 @@ class Bicturetaker:
                         decode_sharpening=0.25,
                         debug=0)
         self.last_results = None
+
+        self.smoother = Smoother()
 
 
     def take_bicture(self) -> Dict:
@@ -50,6 +96,7 @@ class Bicturetaker:
                     break
                 for i in range(4):
                     res[0].corners[i] += (x1, y1)
+                res[0].center += (x1, y1)
                 results.append(res[0])
         if len(results) != 4:
             results = self.detector.detect(gray)
@@ -58,6 +105,7 @@ class Bicturetaker:
 
         for result in results:
             cv2.fillPoly(img, np.int32([result.corners]), (255, 255, 255))
+            cv2.circle(img, np.int32(result.center), 5, (255, 0, 0), 3)
 
         if len(results) == 4:
             actual = np.zeros([4, 2], dtype=np.float32)
@@ -66,9 +114,11 @@ class Bicturetaker:
                 id = result.tag_id
                 if actual[id][0] != 0 or actual[id][1]:
                     return { "raw": img }
-                actual[id] = result.corners[id]
+                actual[id] = extrude_corner(result.center, result.corners[id])
 
             self.last_results = results
+
+            self.smoother.push(actual)
 
             target = np.float32([
                 [0.0, self.resolution[1]],
@@ -78,7 +128,7 @@ class Bicturetaker:
             ])
             #print(actual)
             #print(target)
-            matrix = cv2.getPerspectiveTransform(actual, target)
+            matrix = cv2.getPerspectiveTransform(self.smoother.points(), target)
             distorted = cv2.warpPerspective(img, matrix, self.resolution)
 
             return { "raw": img, "img": distorted}
@@ -107,16 +157,18 @@ class Bicturetaker:
 
 
 def main():
-    bt = Bicturetaker()
+    bt = Bicturetaker(cam_index=1)
     while True:
-        img = bt.take_bicture()
+        d = bt.take_bicture()
 
-        if img is not None:
-            img = cv2.resize(img, (960, 540))
+        if d is not None and "img" in d:
+            img = cv2.resize(d["img"], (960, 540))
             cv2.imshow("Image: ", img)
             key = cv2.waitKey(1)
             if key == 27:
                 return
+        else:
+            print("no img...")
 
 if __name__ == '__main__':
     main()
