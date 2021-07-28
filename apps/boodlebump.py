@@ -7,6 +7,7 @@ from lib.bame import Bame, BarsedContext, TickContext
 import pygame
 import cv2
 import time
+import pymunk.autogeometry
 
 
 def barse_red_lines(image, field):
@@ -18,10 +19,13 @@ def barse_red_lines(image, field):
     if contours:
         smooth_contours = []
         for contour in contours:
+            area = cv2.contourArea(contour)
+            if contour.size < 6 or area < 1:
+                continue
             smooth_contour = contour
             area = cv2.contourArea(contour)
-            while smooth_contour.size > area / 32:
-                smooth_contour = smooth_contour[1::4].astype(int)
+            while smooth_contour.size >= 24 and smooth_contour.size > area / 32:
+                smooth_contour = smooth_contour[0::4].astype(int)
             parsed_contour = [x[0].tolist() for x in smooth_contour]
             smooth_contours.append(parsed_contour)
             #cv2.drawContours(image, [smooth_contour], -1, (0,0,0), 2)
@@ -40,7 +44,7 @@ class BoodleBump:
         self.space.gravity = (0, -9.81)
 
         self.ground = pymunk.Segment(self.space.static_body, (-10, 0.5), (10, 0.5), 0.05)
-        self.ground.friction = 0.5
+        self.ground.friction = 1
         self.space.add(self.ground)
 
         self.boodle_sprite = pygame.transform.scale(pygame.image.load("img/Boodle.png"), (96, 96))
@@ -66,20 +70,25 @@ class BoodleBump:
         scale = resolution[0] / 20
 
         t = time.time()
+
         if self.last_updated is None or t - self.last_updated > 1:
             self.last_updated = t
             if self.drawn_lines:
                 self.space.remove(*self.drawn_lines)
+
             self.drawn_lines = []
             drawn_lines = barsed_context.data["drawn_lines"]
             for line in drawn_lines:
-                parsed_line = []
-                for point in line:
-                    parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
-                line_ground = pymunk.Poly(self.space.static_body, parsed_line)
-                line_ground.friction = 0.5
-                self.space.add(line_ground)
-                self.drawn_lines.append(line_ground)
+                for convexed_line in pymunk.autogeometry.convex_decomposition(list(reversed(line)), 10):
+                    if len(convexed_line) < 4:
+                        continue
+                    parsed_line = []
+                    for point in convexed_line:
+                        parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
+                    line_ground = pymunk.Poly(self.space.static_body, parsed_line)
+                    line_ground.friction = 1
+                    self.space.add(line_ground)
+                    self.drawn_lines.append(line_ground)
 
         grounding = {
             "normal": (0, 0),
@@ -107,6 +116,7 @@ class BoodleBump:
         ):
             well_grounded = True
 
+        #Input handling
         for event in context.events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return True
@@ -119,22 +129,26 @@ class BoodleBump:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and well_grounded:
                 self.boodle.apply_impulse_at_local_point((0, -8))
 
+        #Simulation
         self.space.step(context.delta_ms / 1000)
 
+        #Rendering
         a = self.__with_origin_and_scale(self.ground.a, origin, scale)
         b = self.__with_origin_and_scale(self.ground.b, origin, scale)
         pygame.draw.line(context.screen, 255, a, b, 1)
+
         for line in self.drawn_lines:
             parsed_line = []
             for point in line.get_vertices():
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
             pygame.draw.polygon(context.screen, (255, 0, 0), parsed_line)
+        
+        print(len(self.drawn_lines))
+
         boodle_position = (self.boodle.position[0] -  0.5, self.boodle.position[1] + 0.5)
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
         rotation = self.boodle.rotation_vector
         context.screen.blit(pygame.transform.rotate(self.boodle_sprite, np.degrees(np.arctan2(rotation.y, rotation.x))), boodle_position)
-    
-        print(self.boodle.rotation_vector)
 
     def __with_origin_and_scale(self, point, origin, scale):
         return (origin[0] + point[0] * scale, origin[1] - point[1] * scale)
