@@ -15,7 +15,7 @@ def extract_colors(mat, *, saturation_threshold=80):
 
     # Into HSV and filter out stuff that actually has colors.
     img_hsv = cv2.cvtColor(mat, cv2.COLOR_BGR2HSV_FULL)
-    color_mask = cv2.inRange(img_hsv, (0, saturation_threshold, 100), (255, 255, 255))
+    color_mask = cv2.inRange(img_hsv, (118, saturation_threshold, 100), (150, 255, 255))
     img_hsv = cv2.bitwise_or(img_hsv, img_hsv, mask=color_mask)
 
     # Back to normal again.
@@ -375,7 +375,7 @@ class BectangleRetector:
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
 
     # detect_rectangles(cv2.imread("test2.png"))
     # wait_for_esc()
