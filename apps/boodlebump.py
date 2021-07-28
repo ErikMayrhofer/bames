@@ -52,16 +52,20 @@ class BoodleBump:
         boodle_size = (1, 1)
         boodle_moment = pymunk.moment_for_box(1, boodle_size)
         self.boodle = pymunk.Body(boodle_mass, boodle_moment)
-        self.boodle.position = (0, 7.5)
+        self.boodle_position_init = (0, 7.5)
+        self.boodle.position = self.boodle_position_init
         boodle_shape = pymunk.Poly.create_box(self.boodle, boodle_size)
         boodle_shape.friction = 1
         self.space.add(self.boodle, boodle_shape)
 
-        self.left_pressed = False
-        self.right_pressed = False
+        self.left_held = False
+        self.right_held = False
 
         self.drawn_lines = None
         self.last_updated = None
+
+        self.left_held = False
+        self.left_held = False
         
     def tick(self, context: TickContext, barsed_context: BarsedContext):
 
@@ -120,14 +124,28 @@ class BoodleBump:
         for event in context.events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return True
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                self.boodle.position = self.boodle_position_init
+                self.boodle.angle = 0
+                self.boodle.velocity = (0, 0)
+                self.boodle.angular_velocity = 0
             if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and well_grounded:
-                self.boodle.apply_impulse_at_local_point((0, 8))
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and well_grounded:
-                self.boodle.apply_impulse_at_local_point((-8, 0))
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and well_grounded:
-                self.boodle.apply_impulse_at_local_point((8, 0))
+                self.boodle.velocity = (self.boodle.velocity.x, 8)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and well_grounded:
-                self.boodle.apply_impulse_at_local_point((0, -8))
+                self.boodle.velocity = (self.boodle.velocity.x, -8)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+                self.left_held = True
+            if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
+                self.left_held = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+                self.right_held= True
+            if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+                self.right_held= False
+
+        if self.left_held and well_grounded:
+            self.boodle.velocity = (-5, self.boodle.velocity.y)
+        if self.right_held and well_grounded:
+            self.boodle.velocity = (5, self.boodle.velocity.y)
 
         #Simulation
         self.space.step(context.delta_ms / 1000)
