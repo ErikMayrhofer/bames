@@ -5,7 +5,7 @@ from time import time
 from lib import barameters
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
-from typing import Type, Any, List, Dict
+from typing import Optional, Type, Any, List, Dict
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser, BarserOptions
@@ -135,14 +135,16 @@ class SceneWithBarser:
     def tick(self, context: TickContext) -> bool:
         next_scene = False
         parsed_game = self.barser.get_bayload()
-        if parsed_game:
+        if parsed_game or False:
             barsed_context = BarsedContext()
             barsed_context.age = time() - parsed_game.time
             barsed_context.data = parsed_game.data.barsed_info
             barsed_context.image = parsed_game.data.image
             next_scene = self.sub_scene.tick(context, barsed_context)
         else:
-            print("Waiting for barser to do something....")
+            if self.bame.barameters.start_without_barser:
+                next_scene = self.sub_scene.tick(context, None)
+            # print("Waiting for barser to do something....")
             # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
             pass
 
@@ -160,6 +162,7 @@ class SceneWithBarser:
 
 
 class Bame:
+    bamepads: Optional[BamePadManager]
     def __init__(self, classname: Type):
         self.barameters = Barameters()
         self.game_instance = classname()
@@ -239,7 +242,11 @@ class Bame:
                 if event.type == pygame.MOUSEMOTION:
                     mouse_motion = event # TODO: Mouse-Motion own deltax and deltay .... update them accordingly.
                 else:
-                    unhandled_events.append(event)
+                    # Map Gamepad events
+                    if self.bamepads is not None:
+                        event = self.bamepads.map_event(event)
+                    if event is not None:
+                        unhandled_events.append(event)
 
         if mouse_motion is not None:
             unhandled_events.append(mouse_motion)

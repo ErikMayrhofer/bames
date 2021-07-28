@@ -1,4 +1,6 @@
 from typing import Dict, List
+import pygame
+from pygame.event import Event
 from pygame.joystick import Joystick
 import pygame.joystick as js
 
@@ -29,9 +31,24 @@ BEHIND_LEFT="BEHIND_LEFT"
 TOUCH_LEFT="TOUCH_LEFT"
 TOUCH_RIGHT="TOUCH_RIGHT"
 
+
+AXIS_RIGHT_VERTICAL="AXIS_RIGHT_VERTICAL"
+AXIS_LEFT_VERTICAL="AXIS_LEFT_VERTICAL"
+AXIS_RIGHT_HORIZONTAL="AXIS_RIGHT_HORIZONTAL"
+AXIS_LEFT_HORIZONTAL="AXIS_LEFT_HORIZONTAL"
+AXIS_LEFT_TRIGGER="AXIS_LEFT_TRIGGER"
+AXIS_RIGHT_TRIGGER="AXIS_RIGHT_TRIGGER"
+
+LEFT_HAT="LEFT_HAT"
+
+WEIRD_DISABLED_SHIT="WEIRD!!!"
+
+
 MAPS = {
         # "Wireless Steam Controller": {
         "03000000de2800004211000011010000": {
+            "BUTTONS": {
+                
             0: TOUCH_LEFT,
             1: TOUCH_RIGHT,
             2: BUTTON_SYMBOL_BOTTOM,
@@ -49,9 +66,22 @@ MAPS = {
             14: RIGHT_AXES_PRESS,
             15: BEHIND_LEFT,
             16: BEHIND_RIGHT
+                },
+            "AXES": {
+
+                0: AXIS_LEFT_HORIZONTAL,
+                1: AXIS_LEFT_VERTICAL,
+                2: AXIS_RIGHT_HORIZONTAL,
+                3: AXIS_RIGHT_VERTICAL,
+                },
+            "HATS": {
+                0: LEFT_HAT
+                }
         },
         # "Xbox One S Controller": {
         "050000005e040000e002000003090000": {
+            "BUTTONS": {
+
             0: BUTTON_SYMBOL_BOTTOM,
             1: BUTTON_SYMBOL_RIGHT,
             2: BUTTON_SYMBOL_LEFT,
@@ -63,9 +93,25 @@ MAPS = {
             8: LEFT_AXES_PRESS,
             9: RIGHT_AXES_PRESS,
             10: VENDOR_BUTTON
+                },
+
+            "AXES": {
+
+                0: AXIS_LEFT_HORIZONTAL,
+                1: AXIS_LEFT_VERTICAL,
+                2: AXIS_LEFT_TRIGGER,
+                3: AXIS_RIGHT_HORIZONTAL,
+                4: AXIS_RIGHT_VERTICAL,
+                5: AXIS_RIGHT_TRIGGER,
+                },
+
+            "HATS": {
+                0: LEFT_HAT
+                }
         },
         # "DragonRise Inc. Generic USB Joystick": {
         "03000000790000000600000010010000": {
+            "BUTTONS": {
             0: BUTTON_SYMBOL_TOP,
             1: BUTTON_SYMBOL_RIGHT,
             2: BUTTON_SYMBOL_BOTTOM,
@@ -78,6 +124,18 @@ MAPS = {
             9: MENU_RIGHT,
             10: LEFT_AXES_PRESS,
             11: RIGHT_AXES_PRESS
+            },
+            "AXES": {
+                0: AXIS_LEFT_HORIZONTAL,
+                1: AXIS_LEFT_VERTICAL,
+                2: WEIRD_DISABLED_SHIT,
+                3: AXIS_RIGHT_HORIZONTAL,
+                4: AXIS_RIGHT_VERTICAL
+                },
+
+            "HATS": {
+                0: LEFT_HAT
+                }
         }
     }
 
@@ -87,40 +145,56 @@ class JoystickMetadata:
         pass
 
     def map_button(self, raw_button: int):
-        # print("MAP BUTTON ", self.joystick.get_name(), raw_button)
-
-        name = self.joystick.get_guid()
-        
-        if name in MAPS:
-            map = MAPS[name]
-            if raw_button in map:
-                return map[raw_button]
-            else:
-                # raise Exception(f"Gamepad '{name}' pressed button <{raw_button}> which is not yet present in the MAPS in bamepad.py")
-                print(f"Gamepad '{name}' pressed button <{raw_button}> which is not yet present in the MAPS in bamepad.py")
-        else:
-            # raise Exception(f"Unknown Gamepad '{name}' is not yet present in the MAPS in bamepad.py")
-            print(f"Unknown Gamepad '{name}' is not yet present in the MAPS in bamepad.py")
+        return self.__map("BUTTONS", raw_button)
 
     def map_axes(self, raw_axes: int):
+        return self.__map("AXES", raw_axes)
+
+    def map_hat(self, raw_hat: int):
+        return self.__map("HATS", raw_hat)
+
+
+    def __map(self, type, raw):
         name = self.joystick.get_guid()
         if name in MAPS:
-            map = MAPS[name]
-            if raw_axes in map:
-                return map[raw_axes]
+            map = MAPS[name][type]
+            if raw in map:
+                return map[raw]
             else:
                 # raise Exception(f"Gamepad '{name}' pressed button <{raw_button}> which is not yet present in the MAPS in bamepad.py")
-                print(f"Gamepad '{name}' pressed button <{raw_axes}> which is not yet present in the MAPS in bamepad.py")
+                print(f"Gamepad '{name}' moved {type} <{raw}> which is not yet present in the MAPS in bamepad.py")
         else:
             # raise Exception(f"Unknown Gamepad '{name}' is not yet present in the MAPS in bamepad.py")
             print(f"Unknown Gamepad '{name}' is not yet present in the MAPS in bamepad.py")
 
 
 class BamePadManager:
-    joysticks: List[JoystickMetadata]
+    joysticks: Dict[int, JoystickMetadata]
     def __init__(self, joysticks: List[JoystickMetadata]) -> None:
-        self.joysticks = joysticks
+        self.joysticks = {}
+        for stick in joysticks:
+            self.joysticks[stick.joystick.get_instance_id()] = stick
+    
         pass
+
+    def map_event(self, event: Event):
+        if event.type == pygame.JOYBUTTONUP or event.type == pygame.JOYBUTTONDOWN:
+            joystick = self.joysticks[event.instance_id]
+            event.button = joystick.map_button(event.button)
+            if event.button is WEIRD_DISABLED_SHIT: 
+                return None
+        if event.type == pygame.JOYAXISMOTION:
+            joystick = self.joysticks[event.instance_id]
+            event.axis = joystick.map_axes(event.axis)
+            if event.axis is WEIRD_DISABLED_SHIT: 
+                return None
+        if event.type == pygame.JOYHATMOTION:
+            joystick = self.joysticks[event.instance_id]
+            event.hat = joystick.map_hat(event.hat)
+            if event.hat is WEIRD_DISABLED_SHIT: 
+                return None
+
+        return event
 
 
 class JoystickFactoryParcel:
@@ -146,14 +220,15 @@ class BamePadFactory:
 
 
     def build(self) -> BamePadManager:
+        for x in self.joysticks.values():
+            if not x.active:
+                x.metadata.joystick.quit()
         return BamePadManager([x.build() for x in self.joysticks.values() if x.should_be_built()])
 
     def handle_press(self, joystick_instance_id, button_index):
         joystick = self.joysticks[joystick_instance_id]
 
         mapped_button = joystick.metadata.map_button(button_index)
-
-        print("PRess: ", mapped_button)
 
         if mapped_button == BUTTON_SYMBOL_BOTTOM:
             if joystick.active:
