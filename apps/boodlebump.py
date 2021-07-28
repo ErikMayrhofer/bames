@@ -14,13 +14,13 @@ import pymunk.autogeometry
 bols = BolygonBetector()
 
 
-def barse_red_lines(image, field):
+def barse_red_bolygons(image, field):
     field["bolygons"] = bols.detect(image)
 
 
 class BoodleBump:
 
-    barse_red_lines = BarserMethod(barse_red_lines)
+    barse_red_lines = BarserMethod(barse_red_bolygons)
 
     def load(self) -> None:
         pygame.init()
@@ -62,22 +62,23 @@ class BoodleBump:
 
         if self.last_updated is None or t - self.last_updated > 1:
             self.last_updated = t
-            if self.drawn_lines:
-                self.space.remove(*self.drawn_lines)
 
-            self.drawn_lines = []
             drawn_lines = barsed_context.data["bolygons"]
-            for line in drawn_lines:
-                for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
-                    if len(convexed_line) < 4:
-                        continue
-                    parsed_line = []
-                    for point in convexed_line:
-                        parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
-                    line_ground = pymunk.Poly(self.space.static_body, parsed_line)
-                    line_ground.friction = 1
-                    self.space.add(line_ground)
-                    self.drawn_lines.append(line_ground)
+            if drawn_lines is not None:
+                if self.drawn_lines:
+                    self.space.remove(*self.drawn_lines)
+                self.drawn_lines = []
+                for line in drawn_lines:
+                    for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
+                        if len(convexed_line) < 4:
+                            continue
+                        parsed_line = []
+                        for point in convexed_line:
+                            parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
+                        line_ground = pymunk.Poly(self.space.static_body, parsed_line)
+                        line_ground.friction = 1
+                        self.space.add(line_ground)
+                        self.drawn_lines.append(line_ground)
 
         grounding = {
             "normal": (0, 0),
