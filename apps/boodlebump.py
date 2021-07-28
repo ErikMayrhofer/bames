@@ -141,7 +141,7 @@ class BoodleBump:
             parsed_line = []
             for point in line.get_vertices():
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
-            pygame.draw.polygon(context.screen, (255, 0, 0), parsed_line)
+            pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
         
         print(len(self.drawn_lines))
 
