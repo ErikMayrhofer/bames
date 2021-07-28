@@ -110,21 +110,14 @@ class BoodleBump:
         for event in context.events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return True
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and well_grounded:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and well_grounded:
                 self.boodle.apply_impulse_at_local_point((0, 8))
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and well_grounded:
-                self.left_pressed = True
-            if (event.type == pygame.KEYUP and event.key == pygame.K_LEFT):
-                self.left_pressed = False
+                self.boodle.apply_impulse_at_local_point((-8, 0))
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and well_grounded:
-                self.right_pressed = True
-            if (event.type == pygame.KEYUP and event.key == pygame.K_RIGHT):
-                self.right_pressed = False
-
-        if self.right_pressed and well_grounded:
-            self.boodle.velocity = (2, self.boodle.velocity[1])
-        if self.left_pressed and well_grounded:
-            self.boodle.velocity = (-2, self.boodle.velocity[1])
+                self.boodle.apply_impulse_at_local_point((8, 0))
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and well_grounded:
+                self.boodle.apply_impulse_at_local_point((0, -8))
 
         self.space.step(context.delta_ms / 1000)
 
@@ -135,7 +128,7 @@ class BoodleBump:
             parsed_line = []
             for point in line.get_vertices():
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
-            pygame.draw.polygon(context.screen, 255, parsed_line)
+            pygame.draw.polygon(context.screen, (255, 0, 0), parsed_line)
         boodle_position = (self.boodle.position[0] -  0.5, self.boodle.position[1] + 0.5)
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
         rotation = self.boodle.rotation_vector
