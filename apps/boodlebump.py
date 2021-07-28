@@ -1,10 +1,12 @@
 from ast import parse
+from lib import bicturemaker
+from lib.bicturemaker import Bicturemaker
 from lib.bolygonbetector import BolygonBetector
 
 import numpy as np
 from lib.barser import BarserMethod
 import pymunk
-from lib.bame import Bame, BarsedContext, TickContext
+from lib.bame import Bame, BarsedContext, LoadContext, TickContext
 import pygame
 import cv2
 import time
@@ -22,8 +24,12 @@ class BoodleBump:
 
     barse_red_lines = BarserMethod(barse_red_bolygons)
 
-    def load(self) -> None:
+    def load(self, context: LoadContext) -> None:
         pygame.init()
+
+        self.bicturemaker = context.bicturemaker
+        self.bicturemaker.set_origin(Bicturemaker.BOTTOM_CENTER)
+        self.bicturemaker.set_scale(1/20)
 
         self.space = pymunk.Space()
         self.space.gravity = (0, -9.81)
@@ -54,9 +60,6 @@ class BoodleBump:
         
     def tick(self, context: TickContext, barsed_context: BarsedContext):
 
-        resolution = context.screen.get_size()
-        origin = (resolution[0] / 2, resolution[1])
-        scale = resolution[0] / 20
 
         t = time.time()
 
@@ -74,7 +77,7 @@ class BoodleBump:
                             continue
                         parsed_line = []
                         for point in convexed_line:
-                            parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
+                            parsed_line.append(self.bicturemaker.game2munk(point))
                         line_ground = pymunk.Poly(self.space.static_body, parsed_line)
                         line_ground.friction = 1
                         self.space.add(line_ground)
@@ -137,26 +140,13 @@ class BoodleBump:
         self.space.step(context.delta_ms / 1000)
 
         #Rendering
-        a = self.__with_origin_and_scale(self.ground.a, origin, scale)
-        b = self.__with_origin_and_scale(self.ground.b, origin, scale)
-        pygame.draw.line(context.screen, 255, a, b, 1)
+        self.bicturemaker.draw_line(255, self.ground.a, self.ground.b, 1)
 
         for line in self.drawn_lines:
-            parsed_line = []
-            for point in line.get_vertices():
-                parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
-            pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
+            self.bicturemaker.draw_polygon((63, 0, 0), line)
 
-        boodle_position = (self.boodle.position[0] -  0.5, self.boodle.position[1] + 0.5)
-        boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
         rotation = self.boodle.rotation_vector
-        context.screen.blit(pygame.transform.rotate(self.boodle_sprite, np.degrees(np.arctan2(rotation.y, rotation.x))), boodle_position)
-
-    def __with_origin_and_scale(self, point, origin, scale):
-        return (origin[0] + point[0] * scale, origin[1] - point[1] * scale)
-
-    def __without_origin_and_scale(self, point, origin, scale):
-        return ((point[0] - origin[0]) / scale, (origin[1] - point[1]) / scale)
+        self.bicturemaker.draw_sprite(self.boodle_sprite, self.boodle.position, (-0.5, 0.5), rotation)
 
 if __name__ == '__main__':
     Bame(BoodleBump).run()
