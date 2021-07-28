@@ -2,6 +2,8 @@ from typing import Tuple
 import numpy as np
 
 import pygame
+import pygame.gfxdraw
+import pygame.draw
 
 
 class Bicturemaker:
@@ -32,6 +34,17 @@ class Bicturemaker:
 
     def draw_line(self, color, start_pos, end_pos, width=1):
         pygame.draw.line(self.screen, color, self.munk2game(start_pos), self.munk2game(end_pos), width)
+
+    def draw_aacircle(self, position, radius, color):
+        actual_position = self.munk2game(position)
+        pygame.gfxdraw.aacircle(self.screen, actual_position[0], actual_position[1], radius * self.scale, color)
+
+    def draw_rect(self, color, rect, width=0, border_radius=-1):
+        topleft = self.munk2game(rect.topleft)
+        bottomright = self.munk2game(rect.bottomright)
+        width_height = (bottomright[0] - topleft[0], topleft[1] - bottomright[1])
+        rect = pygame.Rect(topleft, width_height)
+        pygame.draw.rect(self.screen, color, rect, width, border_radius)
 
     def draw_lines(self, color, closed, points, width=1):
         pygame_points = []
