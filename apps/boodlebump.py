@@ -160,8 +160,6 @@ class BoodleBump:
             for point in line.get_vertices():
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
             pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
-        
-        print(len(self.drawn_lines))
 
         boodle_position = (self.boodle.position[0] -  0.5, self.boodle.position[1] + 0.5)
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
