@@ -1,3 +1,4 @@
+from lib import bamepad
 import time
 from typing import List
 from pygame.event import Event
@@ -12,9 +13,10 @@ import random
 import pygame.gfxdraw
 import pymunk.autogeometry
 import pygame.font
+from lib.beymap import BeymapManager, Bvent
 
 
-bols = BolygonBetector()
+bols = BolygonBetector((170, 127, 127), (10, 255, 255))
 
 
 def barse_red_bolygons(image, field):
@@ -26,6 +28,11 @@ class Bong:
     barse_red_lines = BarserMethod(barse_red_bolygons)
     
     def load(self, context: LoadContext) -> None:
+
+        context.beymap_registrar.add_action("UP", bamepad.BUTTON_SYMBOL_TOP)
+        context.beymap_registrar.add_action("DOWN", bamepad.BUTTON_SYMBOL_BOTTOM)
+        context.beymap_registrar.add_action("RESTART", bamepad.MENU_RIGHT)
+
         pygame.font.init()
         self.font = pygame.font.SysFont('Comic Sans MS', 100)
         self.text_position = Vec2d(0, 4.5)
@@ -49,6 +56,21 @@ class Bong:
 
         self.drawn_lines = []
         self.last_updated = None
+
+    def tick(self, context: TickContext, barsed_context: BarsedContext):
+
+        if self.__handle_events(context):
+            return True
+
+        self.__handle_barsed_context(barsed_context)
+
+        self.__handle_physics()
+
+        self.space.step(context.delta_ms / 1000)
+
+        self.__check_win()
+
+        self.__render()
 
     def __init_objects(self):
         self.border_y = 5
@@ -102,21 +124,6 @@ class Bong:
         right_box_shape.elasticity = 1
         self.space.add(self.right_box, right_box_shape)
 
-    def tick(self, context: TickContext, barsed_context: BarsedContext):
-
-        if self.__handle_events(context.events):
-            return True
-
-        self.__handle_barsed_context(barsed_context)
-
-        self.__handle_physics()
-
-        self.space.step(context.delta_ms / 1000)
-
-        self.__check_win()
-
-        self.__render()
-
     def __reset(self):
         self.ball.position = self.ball_position_init
         starting_direction = 1 if bool(random.getrandbits(1)) else -1
@@ -125,30 +132,29 @@ class Bong:
         self.left_box.position = self.left_box_position_init
         self.right_box.position = self.right_box_position_init
 
-    def __handle_events(self, events: List[Event]):
-        for event in events:
+    def __handle_events(self, context: TickContext):
+
+        left_y = 0
+        if context.beymap.player_action(1, "UP"):
+            left_y += 2
+        if context.beymap.player_action(1, "DOWN"):
+            left_y -= 2
+        self.left_box.velocity = (0, left_y)
+        right_y = 0
+        if context.beymap.player_action(2, "UP"):
+            right_y += 2
+        if context.beymap.player_action(2, "DOWN"):
+            right_y -= 2
+        self.right_box.velocity = (0, right_y)
+
+        for event in context.events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return True
-                if event.key == pygame.K_w:
-                    self.left_up = True
-                if event.key == pygame.K_s:
-                    self.left_down = True
-                if event.key == pygame.K_UP:
-                    self.right_up = True
-                if event.key == pygame.K_DOWN:
-                    self.right_down = True
+        for bvent in context.bvents:
+            if bvent.action == "RESTART":
                 if event.key == pygame.K_r:
                     self.__reset()
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_w:
-                    self.left_up = False
-                if event.key == pygame.K_s:
-                    self.left_down = False
-                if event.key == pygame.K_UP:
-                    self.right_up = False
-                if event.key == pygame.K_DOWN:
-                    self.right_down = False
         return False
 
     def __handle_barsed_context(self, barsed_context: BarsedContext):
@@ -176,19 +182,6 @@ class Bong:
                         self.drawn_lines.append(line_ground)
 
     def __handle_physics(self):
-
-        if self.left_up and not self.left_down and self.left_box.position.y < (self.border_y - self.left_box_size.y / 2):
-            self.left_box.velocity = (0, 2)
-        elif self.left_down and not self.left_up and self.left_box.position.y > -(self.border_y - self.left_box_size.y / 2):
-            self.left_box.velocity = (0, -2)
-        else:
-            self.left_box.velocity = (0, 0)
-        if self.right_up and not self.right_down and self.right_box.position.y < (self.border_y - self.right_box_size.y / 2):
-            self.right_box.velocity = (0, 2)
-        elif self.right_down and not self.right_up and self.right_box.position.y > -(self.border_y - self.right_box_size.y / 2):
-            self.right_box.velocity = (0, -2)
-        else:
-            self.right_box.velocity = (0, 0)
 
         if self.ball.velocity.x < self.ball_min_x_velocity and self.ball.velocity.x >= 0:
             self.ball.velocity = (self.ball_min_x_velocity, self.ball.velocity.y)
