@@ -35,6 +35,11 @@ class Bicturemaker:
         (rotated_image, new_rect) = self.__rot_center(sprite, angle, self.munk2game(center_pos))
         self.screen.blit(rotated_image, new_rect)
 
+    def draw_text(self, text, position):
+        text_position = self.munk2game(position)
+        true_text_position = text_position - Vec2d(text.get_width() / 2, text.get_height() / 2)
+        self.screen.blit(text, true_text_position)
+
     def __rot_center(self, image, angle, center):
         rotated_image = pygame.transform.rotate(image, angle)
         new_rect = rotated_image.get_rect(center = image.get_rect(center = center).center)

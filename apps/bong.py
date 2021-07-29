@@ -11,6 +11,7 @@ from lib.bame import Bame, BarsedContext, LoadContext, TickContext
 import random
 import pygame.gfxdraw
 import pymunk.autogeometry
+import pygame.font
 
 
 bols = BolygonBetector()
@@ -25,6 +26,12 @@ class Bong:
     barse_red_lines = BarserMethod(barse_red_bolygons)
     
     def load(self, context: LoadContext) -> None:
+        pygame.font.init()
+        self.font = pygame.font.SysFont('Comic Sans MS', 100)
+        self.text_position = Vec2d(0, 4.5)
+        self.goals_left = 0
+        self.goals_right = 0
+
         self.bicturemaker = context.bicturemaker
         self.bicturemaker.set_origin(Bicturemaker.CENTER)
         self.bicturemaker.set_scale(1/20)
@@ -40,7 +47,7 @@ class Bong:
         self.right_up = False
         self.right_down = False
 
-        self.drawn_lines = None
+        self.drawn_lines = []
         self.last_updated = None
 
     def __init_objects(self):
@@ -64,6 +71,8 @@ class Bong:
         ball_shape.friction = 0.3
         ball_shape.elasticity = 1
         self.space.add(self.ball, ball_shape)
+        self.ball_min_x_velocity = 2
+        self.ball_velocity_init = 5
 
         left_box_mass = 1
         self.left_box_size = Vec2d(1, 2)
@@ -93,8 +102,6 @@ class Bong:
         right_box_shape.elasticity = 1
         self.space.add(self.right_box, right_box_shape)
 
-        self.ball_velocity_init = 5
-
     def tick(self, context: TickContext, barsed_context: BarsedContext):
 
         if self.__handle_events(context.events):
@@ -106,7 +113,7 @@ class Bong:
 
         self.space.step(context.delta_ms / 1000)
 
-        #print(self.ball.velocity)
+        self.__check_win()
 
         self.__render()
 
@@ -163,11 +170,13 @@ class Bong:
                         for point in convexed_line:
                             parsed_line.append(self.bicturemaker.game2munk(Vec2d(point[0], point[1])))
                         line_ground = pymunk.Poly(self.space.static_body, parsed_line)
-                        line_ground.friction = 1
+                        line_ground.friction = 0.3
+                        line_ground.elasticity = 1
                         self.space.add(line_ground)
                         self.drawn_lines.append(line_ground)
 
     def __handle_physics(self):
+
         if self.left_up and not self.left_down and self.left_box.position.y < (self.border_y - self.left_box_size.y / 2):
             self.left_box.velocity = (0, 2)
         elif self.left_down and not self.left_up and self.left_box.position.y > -(self.border_y - self.left_box_size.y / 2):
@@ -180,6 +189,21 @@ class Bong:
             self.right_box.velocity = (0, -2)
         else:
             self.right_box.velocity = (0, 0)
+
+        if self.ball.velocity.x < self.ball_min_x_velocity and self.ball.velocity.x >= 0:
+            self.ball.velocity = (self.ball_min_x_velocity, self.ball.velocity.y)
+        elif self.ball.velocity.x > -self.ball_min_x_velocity and self.ball.velocity.x < 0:
+            self.ball.velocity = (-self.ball_min_x_velocity, self.ball.velocity.y)
+
+        self.ball.apply_force_at_local_point(self.ball.velocity.rotated(-self.ball.angle).normalized())
+
+    def __check_win(self):
+        if self.ball.position.x < self.left_box.position.x:
+            self.goals_left += 1
+            self.__reset()
+        if self.ball.position.x > self.right_box.position.x:
+            self.goals_right += 1
+            self.__reset()
 
     def __render(self):
         self.bicturemaker.draw_line((255, 255, 0), self.top.a, self.top.b)
@@ -194,6 +218,10 @@ class Bong:
 
         for line in self.drawn_lines:
             self.bicturemaker.draw_polygon((63, 0, 0), line)
+
+        text = self.font.render(str(self.goals_left) + " - " + str(self.goals_right), False, (255, 255, 255))
+
+        self.bicturemaker.draw_text(text, self.text_position)
 
 
 if __name__ == '__main__':
