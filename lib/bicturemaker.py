@@ -37,14 +37,14 @@ class Bicturemaker:
 
     def draw_aacircle(self, position, radius, color):
         actual_position = self.munk2game(position)
-        pygame.gfxdraw.aacircle(self.screen, actual_position[0], actual_position[1], radius * self.scale, color)
+        pygame.gfxdraw.aacircle(self.screen, int(actual_position[0]), int(actual_position[1]), int(radius * self.scale), color)
 
-    def draw_rect(self, color, rect, width=0, border_radius=-1):
-        topleft = self.munk2game(rect.topleft)
-        bottomright = self.munk2game(rect.bottomright)
-        width_height = (bottomright[0] - topleft[0], topleft[1] - bottomright[1])
-        rect = pygame.Rect(topleft, width_height)
-        pygame.draw.rect(self.screen, color, rect, width, border_radius)
+    def draw_rect(self, color, topleft, bottomright, width=0, border_radius=-1):
+        actual_topleft = self.munk2game(topleft)
+        actual_bottomright = self.munk2game(bottomright)
+        width_height = (actual_bottomright[0] - actual_topleft[0], actual_bottomright[1] - actual_topleft[1])
+        rect = pygame.Rect(actual_topleft, width_height)
+        pygame.draw.rect(self.screen, color, rect, int(width * self.scale), int(border_radius * self.scale))
 
     def draw_lines(self, color, closed, points, width=1):
         pygame_points = []
