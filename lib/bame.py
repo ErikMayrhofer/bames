@@ -1,4 +1,5 @@
 import ctypes
+from lib.beymap import BeymapManager, BeymapRegistrar
 from lib.bamepad import BamePadFactory, BamePadManager
 import os
 from time import time
@@ -14,6 +15,11 @@ import cv2
 
 class LoadContext:
     bicturemaker: Bicturemaker
+    beymap_registrar: BeymapRegistrar
+
+class SceneLoadContext:
+    bicturemaker: Bicturemaker
+    beymap_registrar: BeymapRegistrar
 
 class BarsedContext:
     data: Dict
@@ -26,6 +32,7 @@ class TickContext:
     screen: Any
     barameters: Barameters
     bamepads: BamePadManager
+    beymap: BeymapManager
     bicturemaker: Bicturemaker
 
     events: List[Any]
@@ -36,7 +43,7 @@ class SplashScene:
         self.frames = Keyframes([(0, 0), (0.5, 255), (1.3, 255), (1.5, 0)])
 
 
-    def load(self, context: LoadContext):
+    def load(self, context: SceneLoadContext):
         pass
 
     def tick(self, context: TickContext) -> bool:
@@ -57,7 +64,7 @@ class InitTagsScene:
         self.found = False
         self.bame = bame
 
-    def load(self, context: LoadContext):
+    def load(self, context: SceneLoadContext):
         self.taker = Bicturetaker(cam_index=self.bame.barameters.camera_index, tag_timeout=0.1)
 
     def tick(self, context: TickContext) -> bool:
@@ -90,7 +97,7 @@ class BamePadScene:
         self.bame = bame
         pass
 
-    def load(self):
+    def load(self, context: SceneLoadContext):
         self.factory = BamePadFactory()
         
         self.font = pygame.font.SysFont(None, 24)
@@ -123,6 +130,7 @@ class BamePadScene:
 
     def unload(self):
         self.bame.bamepads = self.factory.build()
+        self.bame.beymap = BeymapManager(self.bame.bamepads, self.bame.barameters)
         pass
 
 class SceneWithBarser:
@@ -132,7 +140,7 @@ class SceneWithBarser:
         self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.bame.barameters.tag_size, self.bame.barameters.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
-    def load(self, context: LoadContext):
+    def load(self, context: SceneLoadContext):
         self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
         self.barser.launch()
 
@@ -167,6 +175,7 @@ class SceneWithBarser:
 
 class Bame:
     bamepads: Optional[BamePadManager]
+    beymap: Optional[BeymapManager]
     def __init__(self, classname: Type):
         self.barameters = Barameters()
         self.game_instance = classname()
@@ -183,6 +192,7 @@ class Bame:
                 ]
 
         self.bamepads = None
+        self.beymap = None
 
     def run(self):
         if os.name == 'nt':
@@ -194,6 +204,7 @@ class Bame:
 
         context = LoadContext()
         context.bicturemaker = self.bicturemaker
+        context.beymap_registrar = BeymapRegistrar()
         self.game_instance.load(context)
 
         self.start_loop()
@@ -226,6 +237,7 @@ class Bame:
             context.events = self.handle_events()
             context.bamepads = self.bamepads
             context.bicturemaker = self.bicturemaker
+            context.beymap = self.beymap
 
             #print(f"Unhandled Events {context.events}")
 
