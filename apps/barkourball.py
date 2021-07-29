@@ -80,8 +80,6 @@ class Bong:
         self.__render()
 
     def __reset(self):
-        self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
-        self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
 
         self.ball.position = self.start
         self.ball.velocity = (0, 0)
@@ -132,9 +130,11 @@ class Bong:
 
     def __check_win(self):
         t = time.time()
-        if self.time_won is None:
-            print((self.ball.position - self.end).length)
-        if ((self.ball.position - self.end).length < 0.2 or self.ball.position.y < 0) and self.time_won is None:
+        if ((self.ball.position - self.end).length < 0.2) and self.time_won is None:
+            self.time_won = time.time()
+            self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
+            self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
+        if self.ball.position.y < 0 and self.time_won is None:
             self.time_won = time.time()
         if self.time_won is not None and t - self.time_won > 1:
             self.time_won = None
