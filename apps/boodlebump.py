@@ -1,5 +1,5 @@
 from ast import parse
-from lib import bicturemaker
+from lib import bamepad, bicturemaker
 from lib.bicturemaker import Bicturemaker
 from lib.bolygonbetector import BolygonBetector
 
@@ -27,6 +27,13 @@ class BoodleBump:
     barse_red_lines = BarserMethod(barse_red_bolygons)
 
     def load(self, context: LoadContext) -> None:
+
+        context.beymap_registrar.add_action("UP", bamepad.BUTTON_SYMBOL_TOP)
+        context.beymap_registrar.add_action("DOWN", bamepad.BUTTON_SYMBOL_BOTTOM)
+        context.beymap_registrar.add_action("LEFT", bamepad.BUTTON_SYMBOL_LEFT)
+        context.beymap_registrar.add_action("RIGHT", bamepad.BUTTON_SYMBOL_RIGHT)
+        context.beymap_registrar.add_action("RESTART", bamepad.MENU_RIGHT)
+
         self.bicturemaker = context.bicturemaker
         self.bicturemaker.set_origin(Bicturemaker.BOTTOM_CENTER)
         self.bicturemaker.set_scale(1/20)
@@ -115,30 +122,23 @@ class BoodleBump:
             well_grounded = True
 
         #Input handling
-        for event in context.events:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return True
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+        for event in context.bvents:
+            if event.action == "UP" and well_grounded:
+                self.boodle.velocity = (self.boodle.velocity.x, 8)
+            if event.action == "DOWN" and well_grounded:
+                self.boodle.velocity = (self.boodle.velocity.x, -8)
+            if event.action == "RESTART":
                 self.boodle.position = self.boodle_position_init
                 self.boodle.angle = 0
                 self.boodle.velocity = (0, 0)
                 self.boodle.angular_velocity = 0
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and well_grounded:
-                self.boodle.velocity = (self.boodle.velocity.x, 8)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and well_grounded:
-                self.boodle.velocity = (self.boodle.velocity.x, -8)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
-                self.left_held = True
-            if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
-                self.left_held = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
-                self.right_held= True
-            if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
-                self.right_held= False
+        for event in context.events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                 return True
 
-        if self.left_held and well_grounded:
+        if context.beymap.player_action(1, "LEFT") and well_grounded:
             self.boodle.velocity = (-5, self.boodle.velocity.y)
-        if self.right_held and well_grounded:
+        if context.beymap.player_action(1, "RIGHT") and well_grounded:
             self.boodle.velocity = (5, self.boodle.velocity.y)
 
         #Simulation
@@ -157,7 +157,6 @@ class BoodleBump:
         rotation = self.boodle.rotation_vector
         angle = np.degrees(np.arctan2(rotation.y, rotation.x))
         angle = self._snap_angle(angle)
-        print(angle)
 
         # (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
         # context.screen.blit(rot_img, rect)
