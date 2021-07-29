@@ -40,8 +40,10 @@ class BeymapManager:
     def player_action(self, player, name) -> Any:
         stick = self.bamepad.of_player(player)
         if stick is None:
+            if player == 0:
+                raise Exception(f"And again... Players are 1-based u stupid fuck.")
             raise Exception(f"Tried to get action for Player #{player} but no Bamepad was found for it.")
-        stick.get_control(self.map[player].control_for_action(name))
+        return stick.get_control(self.map[player].control_for_action(name))
 
     def map_event(self, event: Union[Event, Bvent]) -> Union[Event, Bvent]:
         if isinstance(event, Bvent):

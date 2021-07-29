@@ -1,6 +1,6 @@
 import ctypes
 from lib.beymap import BeymapManager, BeymapRegistrar
-from lib.bamepad import BamePadFactory, BamePadManager
+from lib.bamepad import BamePadFactory, BamePadManager, Bvent
 import os
 from time import time
 
@@ -8,7 +8,7 @@ from pygame.event import Event
 from lib.bicturemaker import Bicturemaker
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
-from typing import Optional, Type, Any, List, Dict, Union
+from typing import Optional, Tuple, Type, Any, List, Dict, Union
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser, BarserOptions
@@ -38,6 +38,7 @@ class TickContext:
     bicturemaker: Bicturemaker
 
     events: List[Event]
+    bvents: List[Bvent]
 
 class SplashScene:
     def __init__(self, _: "Bame"):
@@ -241,7 +242,7 @@ class Bame:
             context.delta_ms = delta_t
             context.screen = self.screen
             context.barameters = self.barameters
-            context.events = self.handle_events()
+            (context.events, context.bvents) = self.handle_events()
             context.bamepads = self.bamepads
             context.bicturemaker = self.bicturemaker
             context.beymap = self.beymap
@@ -260,8 +261,9 @@ class Bame:
             self.scenes[0].unload()
         print("Bye!")
 
-    def handle_events(self) -> List[Any]:
+    def handle_events(self) -> Tuple[List[Event], List[Bvent]]:
         unhandled_events = []
+        bvents = []
 
         mouse_motion = None
 
@@ -275,16 +277,17 @@ class Bame:
                     mouse_motion = event # TODO: Mouse-Motion own deltax and deltay .... update them accordingly.
                 else:
                     # Map Gamepad events
+                    unhandled_events.append(event)
                     if self.bamepads is not None:
                         event = self.bamepads.map_event(event)
                     if self.beymap is not None and isinstance(self.beymap, BeymapManager):
                         event = self.beymap.map_event(event)
-                    if event is not None:
-                        unhandled_events.append(event)
+                    if isinstance(event, Bvent):
+                        bvents.append(event)
 
         if mouse_motion is not None:
             unhandled_events.append(mouse_motion)
-        return unhandled_events
+        return (unhandled_events, bvents)
             
     def handle_event(self, event):
         if event.type == pygame.QUIT:

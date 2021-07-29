@@ -1,3 +1,4 @@
+from pygame.constants import K_KP0, K_RETURN
 from lib.barameters import Barameters
 from lib import beymap
 import pygame.key
@@ -146,6 +147,8 @@ MAPS = {
                 pygame.K_DOWN: BUTTON_SYMBOL_BOTTOM,       
                 pygame.K_LEFT: BUTTON_SYMBOL_LEFT,       
                 pygame.K_RIGHT: BUTTON_SYMBOL_RIGHT,       
+                pygame.K_r: MENU_RIGHT,
+                pygame.K_RETURN: MENU_LEFT,
                 },
             "AXES": {
 
@@ -167,7 +170,9 @@ class KeyboardFakeJoystick:
         pass
 
     def get_button(self, raw):
-        return pygame.key.get_pressed()[raw]
+        result = pygame.key.get_pressed()[raw] == 1
+        print("GET BUTTON: ", raw, pygame.K_LEFT, result)
+        return result
 
     def get_axis(self, raw):
         return None
@@ -180,6 +185,10 @@ class KeyboardFakeJoystick:
 
     def get_guid(self):
         return "KEYBOARDEMU1"
+
+    def quit(self):
+        #TODO.. Something?
+        pass
 
     def get_instance_id(self):
         return self.instance_id
@@ -297,10 +306,10 @@ class BamePadManager:
     def __get_joystick_from_event(self, event: Event) -> Optional[JoystickMetadata]:
         if event.type in JOYSTICK_EVENTS:
             return self.joysticks[event.instance_id]
-        if event.type == pygame.KEYDOWN:
-            return self.joysticks[get_fake_joystick_id("KEYBOARD", 1)]
-        if event.type == pygame.KEYUP:
-            return self.joysticks[get_fake_joystick_id("KEYBOARD", 1)]
+        if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            fake_id = get_fake_joystick_id("KEYBOARD", 1)
+            if fake_id in self.joysticks:
+                return self.joysticks[get_fake_joystick_id("KEYBOARD", 1)]
         return None
 
     def of_player(self, player_num) -> Optional[JoystickMetadata]:
