@@ -1,5 +1,7 @@
 from ast import parse
 
+import pygame.transform
+import pygame.draw
 import numpy as np
 from lib.barser import BarserMethod
 import pymunk
@@ -41,9 +43,10 @@ class BoodleBump:
         pygame.init()
 
         self.space = pymunk.Space()
+        self.space.iterations = 50
         self.space.gravity = (0, -9.81)
 
-        self.ground = pymunk.Segment(self.space.static_body, (-10, 0.5), (10, 0.5), 0.05)
+        self.ground = pymunk.Segment(self.space.static_body, (-10, 0.5), (10, 0.5), 0.2)
         self.ground.friction = 1
         self.space.add(self.ground)
 
@@ -61,13 +64,14 @@ class BoodleBump:
         self.left_held = False
         self.right_held = False
 
-        self.drawn_lines = None
+        self.drawn_lines = []
         self.last_updated = None
 
         self.left_held = False
         self.left_held = False
         
     def tick(self, context: TickContext, barsed_context: BarsedContext):
+        # print(context.fps)
 
         resolution = context.screen.get_size()
         origin = (resolution[0] / 2, resolution[1])
@@ -151,9 +155,10 @@ class BoodleBump:
         self.space.step(context.delta_ms / 1000)
 
         #Rendering
+        thicc = self.ground.radius * scale
         a = self.__with_origin_and_scale(self.ground.a, origin, scale)
         b = self.__with_origin_and_scale(self.ground.b, origin, scale)
-        pygame.draw.line(context.screen, 255, a, b, 1)
+        pygame.draw.line(context.screen, (255, 255, 255), a, b, int(thicc))
 
         for line in self.drawn_lines:
             parsed_line = []
@@ -161,12 +166,39 @@ class BoodleBump:
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
             pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
         
-        print(len(self.drawn_lines))
+        # print(len(self.drawn_lines))
 
-        boodle_position = (self.boodle.position[0] -  0.5, self.boodle.position[1] + 0.5)
+        boodle_position = (self.boodle.position[0], self.boodle.position[1])
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
         rotation = self.boodle.rotation_vector
-        context.screen.blit(pygame.transform.rotate(self.boodle_sprite, np.degrees(np.arctan2(rotation.y, rotation.x))), boodle_position)
+        angle = np.degrees(np.arctan2(rotation.y, rotation.x))
+        # angle = self._snap_angle(angle)
+        print(angle)
+
+        (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
+        context.screen.blit(rot_img, rect)
+        pygame.draw.circle(context.screen, (255, 0, 0), boodle_position, 2)
+
+        # print(self.boodle.is_sleeping)
+
+    def _snap_angle(self, angle):
+        thresh = 2
+        if abs(angle) < thresh:
+            angle = 0
+        if abs(angle - 90) < thresh:
+            angle = 90 
+        if abs(angle + 90) < thresh:
+            angle = -90 
+        if abs(angle - 180) < thresh:
+            angle = 180 
+        if abs(angle + 180) < thresh:
+            angle = -180 
+        return angle
+
+    def __rot_center(self, image, angle, center):
+        rotated_image = pygame.transform.rotate(image, angle)
+        new_rect = rotated_image.get_rect(center = image.get_rect(center = center).center)
+        return rotated_image, new_rect
 
     def __with_origin_and_scale(self, point, origin, scale):
         return (origin[0] + point[0] * scale, origin[1] - point[1] * scale)
