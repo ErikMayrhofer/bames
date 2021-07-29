@@ -45,9 +45,9 @@ class Bong:
 
     def __init_objects(self):
 
-        self.start_x = 9
+        self.start_x = 8
         self.start_y = 10
-        self.end_x = 9
+        self.end_x = 8
         self.end_y = 1
         self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
         self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
@@ -134,8 +134,7 @@ class Bong:
         t = time.time()
         if self.time_won is None:
             print((self.ball.position - self.end).length)
-        if ((self.ball.position - self.end).length < 0.2 and self.time_won is None) or self.ball.position.y < 0:
-            print("WON")
+        if ((self.ball.position - self.end).length < 0.2 or self.ball.position.y < 0) and self.time_won is None:
             self.time_won = time.time()
         if self.time_won is not None and t - self.time_won > 1:
             self.time_won = None
