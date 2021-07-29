@@ -1,6 +1,8 @@
 import ctypes
 import os
 from time import time
+
+from pygame.event import Event
 from lib.bicturemaker import Bicturemaker
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
@@ -25,7 +27,7 @@ class TickContext:
     screen: Any
     barameters: Barameters
 
-    events: List[Any]
+    events: List[Event]
 
 class SplashScene:
     def __init__(self, _: "Bame"):
