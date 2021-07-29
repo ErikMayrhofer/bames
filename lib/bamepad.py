@@ -238,7 +238,6 @@ class BamePadManager:
 
     def map_event(self, event: Event) -> Optional[Union[Event, Bvent]]:
         if event.type in MAPPABLE_EVENTS:
-            print("Mappable Events ", event)
             joystick = self.joysticks[event.instance_id]
             (value, control_name) = self.__extract_mapped_control_from_event(joystick, event)
             player = joystick.player_num

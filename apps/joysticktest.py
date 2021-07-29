@@ -29,7 +29,7 @@ class JoyStickTest:
 
         for event in context.events:
             if isinstance(event, bamepad.Bvent):
-                print(event)
+                # print(event)
                 self.values[f"{event.player} - {event.control_name}"]=event.value
 
 

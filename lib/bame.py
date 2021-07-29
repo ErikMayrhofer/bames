@@ -274,13 +274,9 @@ class Bame:
                 else:
                     # Map Gamepad events
                     if self.bamepads is not None:
-                        print("Bamepadding event: ", event)
                         event = self.bamepads.map_event(event)
-                        print(" To: ", event)
                     if self.beymap is not None and isinstance(self.beymap, BeymapManager):
-                        print("Beymapping event", event)
                         event = self.beymap.map_event(event)
-                        print(" TO: ", event)
                     if event is not None:
                         unhandled_events.append(event)
 
