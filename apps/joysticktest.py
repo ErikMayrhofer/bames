@@ -28,6 +28,7 @@ class JoyStickTest:
             context.screen.blit(textimg, (200, idx*20))
 
         for event in context.events:
+            print(event)
             if isinstance(event, bamepad.Bvent):
                 # print(event)
                 self.values[f"{event.player} - {event.control_name}"]=event.value

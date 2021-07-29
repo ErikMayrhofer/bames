@@ -282,7 +282,6 @@ class BamePadManager:
 
     def map_event(self, event: Event) -> Optional[Union[Event, Bvent]]:
         joystick = self.__get_joystick_from_event(event)
-        print("EVENT: ", event, joystick)
         if joystick is not None:
 
             (value, control_name) = self.__extract_mapped_control_from_event(joystick, event)
