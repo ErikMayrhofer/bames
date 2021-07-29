@@ -161,7 +161,7 @@ class Bong:
                             continue
                         parsed_line = []
                         for point in convexed_line:
-                            parsed_line.append(self.bicturemaker.game2munk(point))
+                            parsed_line.append(self.bicturemaker.game2munk(Vec2d(point[0], point[1])))
                         line_ground = pymunk.Poly(self.space.static_body, parsed_line)
                         line_ground.friction = 1
                         self.space.add(line_ground)
@@ -184,12 +184,12 @@ class Bong:
     def __render(self):
         self.bicturemaker.draw_line((255, 255, 0), self.top.a, self.top.b)
         self.bicturemaker.draw_line((255, 255, 0), self.bottom.a, self.bottom.b)
-        self.bicturemaker.draw_aacircle(self.ball.position, self.ball_radius, (255, 0, 0))
-        left_box_topleft = (self.left_box.position[0] - self.left_box_size[0] / 2, self.left_box.position[1] + self.left_box_size[1] / 2)
-        left_box_bottomright = (left_box_topleft[0] + self.left_box_size[0], left_box_topleft[1] - self.left_box_size[1])
+        self.bicturemaker.draw_filled_circle(self.ball.position, self.ball_radius, (255, 0, 0))
+        left_box_topleft = self.left_box.position + Vec2d(-self.left_box_size.x / 2, self.left_box_size.y / 2)
+        left_box_bottomright = left_box_topleft + Vec2d(self.left_box_size.x, -self.left_box_size.y)
         self.bicturemaker.draw_rect((255, 255, 0), left_box_topleft, left_box_bottomright, border_radius=self.left_box_radius)
-        right_box_topleft = (self.right_box.position[0] - self.right_box_size[0] / 2, self.right_box.position[1] + self.right_box_size[1] / 2)
-        right_box_bottomright = (right_box_topleft[0] + self.right_box_size[0], right_box_topleft[1] - self.right_box_size[1])
+        right_box_topleft = self.right_box.position + Vec2d(-self.right_box_size.x / 2, self.right_box_size.y / 2)
+        right_box_bottomright = right_box_topleft + Vec2d(self.right_box_size.x, -self.right_box_size.y)
         self.bicturemaker.draw_rect((255, 255, 0), right_box_topleft, right_box_bottomright, border_radius=self.right_box_radius)
 
         for line in self.drawn_lines:
