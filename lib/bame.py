@@ -3,6 +3,8 @@ from lib.beymap import BeymapManager, BeymapRegistrar
 from lib.bamepad import BamePadFactory, BamePadManager
 import os
 from time import time
+
+from pygame.event import Event
 from lib.bicturemaker import Bicturemaker
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
@@ -35,7 +37,7 @@ class TickContext:
     beymap: BeymapManager
     bicturemaker: Bicturemaker
 
-    events: List[Any]
+    events: List[Event]
 
 class SplashScene:
     def __init__(self, _: "Bame"):
