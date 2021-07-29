@@ -69,7 +69,7 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
     """
     running = True
 
-    taker = Bicturetaker(cam_index=options.camera_index)
+    taker = Bicturetaker(cam_index=options.camera_index, tag_timeout=1)
 
     print("[BW] Worker started...")
     while running:

@@ -1,4 +1,6 @@
 from ast import parse
+from lib import bicturemaker
+from lib.bicturemaker import Bicturemaker
 from lib.bolygonbetector import BolygonBetector
 
 import pygame.transform
@@ -6,7 +8,7 @@ import pygame.draw
 import numpy as np
 from lib.barser import BarserMethod
 import pymunk
-from lib.bame import Bame, BarsedContext, TickContext
+from lib.bame import Bame, BarsedContext, LoadContext, TickContext
 import pygame
 import cv2
 import time
@@ -16,16 +18,20 @@ import pymunk.autogeometry
 bols = BolygonBetector()
 
 
-def barse_red_lines(image, field):
+def barse_red_bolygons(image, field):
     field["bolygons"] = bols.detect(image)
 
 
 class BoodleBump:
 
-    barse_red_lines = BarserMethod(barse_red_lines)
+    barse_red_lines = BarserMethod(barse_red_bolygons)
 
-    def load(self) -> None:
+    def load(self, context: LoadContext) -> None:
         pygame.init()
+
+        self.bicturemaker = context.bicturemaker
+        self.bicturemaker.set_origin(Bicturemaker.BOTTOM_CENTER)
+        self.bicturemaker.set_scale(1/20)
 
         self.space = pymunk.Space()
         self.space.iterations = 10
@@ -66,22 +72,23 @@ class BoodleBump:
 
         if self.last_updated is None or t - self.last_updated > 1:
             self.last_updated = t
-            if self.drawn_lines:
-                self.space.remove(*self.drawn_lines)
 
-            self.drawn_lines = []
             drawn_lines = barsed_context.data["bolygons"]
-            for line in drawn_lines:
-                for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
-                    if len(convexed_line) < 4:
-                        continue
-                    parsed_line = []
-                    for point in convexed_line:
-                        parsed_line.append(self.__without_origin_and_scale(point, origin, scale))
-                    line_ground = pymunk.Poly(self.space.static_body, parsed_line)
-                    line_ground.friction = 1
-                    self.space.add(line_ground)
-                    self.drawn_lines.append(line_ground)
+            if drawn_lines is not None:
+                if self.drawn_lines:
+                    self.space.remove(*self.drawn_lines)
+                self.drawn_lines = []
+                for line in drawn_lines:
+                    for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
+                        if len(convexed_line) < 4:
+                            continue
+                        parsed_line = []
+                        for point in convexed_line:
+                            parsed_line.append(self.bicturemaker.game2munk(point))
+                        line_ground = pymunk.Poly(self.space.static_body, parsed_line)
+                        line_ground.friction = 1
+                        self.space.add(line_ground)
+                        self.drawn_lines.append(line_ground)
 
         grounding = {
             "normal": (0, 0),
@@ -145,13 +152,11 @@ class BoodleBump:
         thicc = self.ground.radius * scale
         a = self.__with_origin_and_scale(self.ground.a, origin, scale)
         b = self.__with_origin_and_scale(self.ground.b, origin, scale)
-        pygame.draw.line(context.screen, (255, 255, 255), a, b, int(thicc))
+        # pygame.draw.line(context.screen, (255, 255, 255), a, b, int(thicc))
+        self.bicturemaker.draw_line(255, self.ground.a, self.ground.b, 1)
 
         for line in self.drawn_lines:
-            parsed_line = []
-            for point in line.get_vertices():
-                parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
-            pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
+            self.bicturemaker.draw_polygon((63, 0, 0), line)
 
         boodle_position = (self.boodle.position[0], self.boodle.position[1])
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
@@ -163,6 +168,9 @@ class BoodleBump:
         (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
         context.screen.blit(rot_img, rect)
         pygame.draw.circle(context.screen, (255, 0, 0), boodle_position, 2)
+
+        # rotation = self.boodle.rotation_vector
+        # self.bicturemaker.draw_sprite(self.boodle_sprite, self.boodle.position, (-0.5, 0.5), rotation)
 
         # print(self.boodle.is_sleeping)
 

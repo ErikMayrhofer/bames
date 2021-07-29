@@ -23,4 +23,5 @@ class BolygonBetector:
                     smooth_contour = smooth_contour[0::4].astype(int)
                 parsed_contour = [x[0].tolist() for x in reversed(smooth_contour)]
                 smooth_contours.append(parsed_contour)
-        return smooth_contours
+            return smooth_contours
+        return None
