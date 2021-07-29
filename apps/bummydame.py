@@ -1,6 +1,6 @@
 from lib.bectangleretector import BectangleRetector, imshow_small, rect_to_verts
 import numpy as np
-from lib.bame import BarsedContext
+from lib.bame import BarsedContext, LoadContext
 from lib import Bame, TickContext, barameters
 import pygame
 from pygame.surface import Surface
@@ -33,8 +33,9 @@ def rot_center(image, angle):
     return rot_sprite
 
 class BummyDame:
-    def load(self) -> None:
+    def load(self, context: LoadContext) -> None:
         print("FONT INIT:")
+        self.bicturemaker = context.bicturemaker
         self.font = pygame.font.SysFont(None, 24)
         self.flowo = pygame.image.load("img/flowo.png")
     

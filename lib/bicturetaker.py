@@ -1,3 +1,4 @@
+import time
 import cv2
 from typing import Dict, List, Tuple
 from pupil_apriltags import Detector
@@ -49,7 +50,7 @@ class Smoother:
 
 class Bicturetaker:
 
-    def __init__(self, resolution=(1920, 1080), family='tag16h5', *, cam_index):
+    def __init__(self, resolution=(1920, 1080), family='tag16h5', *, cam_index, tag_timeout):
         self.cap = cv2.VideoCapture(cam_index)
         self.resolution = resolution
         self.cap.set(3, self.resolution[0])
@@ -62,6 +63,9 @@ class Bicturetaker:
                         decode_sharpening=0.25,
                         debug=0)
         self.last_results = None
+        self.tag_timeout = tag_timeout
+        self.last_read = None
+        self.matrix = None
 
         self.smoother = Smoother()
 
@@ -80,61 +84,63 @@ class Bicturetaker:
         _, img = self.cap.read()
         gray = cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 
-        results = []
-        if self.last_results:
-            for last_result in self.last_results:
-                x1 = int(min([x for (x, _) in last_result.corners])) - 10
-                x1 = x1 if x1 >= 0 else 0
-                x2 = int(max([x for (x, _) in last_result.corners])) + 10
-                x2 = x2 if x1 < img.shape[1] else img.shape[1]
-                y1 = int(min([y for (_, y) in last_result.corners])) - 10
-                y1 = y1 if y1 >= 0 else 0
-                y2 = int(max([y for (_, y) in last_result.corners])) + 10
-                y2 = y2 if y2 < img.shape[0] else img.shape[0]
-                res = self.detector.detect(gray[y1:y2,x1:x2])
-                if len(res) != 1:
-                    break
-                for i in range(4):
-                    res[0].corners[i] += (x1, y1)
-                res[0].center += (x1, y1)
-                results.append(res[0])
-        if len(results) != 4:
-            results = self.detector.detect(gray)
+        t = time.time()
+        if self.last_read is None or t - self.last_read >= self.tag_timeout:
+            self.last_read = t
+            results = []
+            if self.last_results:
+                for last_result in self.last_results:
+                    x1 = int(min([x for (x, _) in last_result.corners])) - 10
+                    x1 = x1 if x1 >= 0 else 0
+                    x2 = int(max([x for (x, _) in last_result.corners])) + 10
+                    x2 = x2 if x1 < img.shape[1] else img.shape[1]
+                    y1 = int(min([y for (_, y) in last_result.corners])) - 10
+                    y1 = y1 if y1 >= 0 else 0
+                    y2 = int(max([y for (_, y) in last_result.corners])) + 10
+                    y2 = y2 if y2 < img.shape[0] else img.shape[0]
+                    res = self.detector.detect(gray[y1:y2,x1:x2])
+                    if len(res) != 1:
+                        break
+                    for i in range(4):
+                        res[0].corners[i] += (x1, y1)
+                    res[0].center += (x1, y1)
+                    results.append(res[0])
+            if len(results) != 4:
+                results = self.detector.detect(gray)
 
-        results = [result for result in results if result.tag_id in range(4)]
+            results = [result for result in results if result.tag_id in range(4)]
 
-        for result in results:
-            cv2.fillPoly(img, np.int32([result.corners]), (255, 255, 255))
-            cv2.circle(img, np.int32(result.center), 5, (255, 0, 0), 3)
+            #for result in results:
+            #    cv2.fillPoly(img, np.int32([result.corners]), (255, 255, 255))
+            #    cv2.circle(img, np.int32(result.center), 5, (255, 0, 0), 3)
 
-        if len(results) == 4:
-            actual = np.zeros([4, 2], dtype=np.float32)
-            for result in results:
-                #print(result)
-                id = result.tag_id
-                if actual[id][0] != 0 or actual[id][1]:
-                    return { "raw": img }
-                actual[id] = extrude_corner(result.center, result.corners[id])
+            if len(results) == 4:
+                actual = np.zeros([4, 2], dtype=np.float32)
+                for result in results:
+                    id = result.tag_id
+                    if actual[id][0] != 0 or actual[id][1]:
+                        return { "raw": img }
+                    actual[id] = extrude_corner(result.center, result.corners[id])
 
-            self.last_results = results
+                self.last_results = results
 
-            self.smoother.push(actual)
+                self.smoother.push(actual)
 
-            target = np.float32([
-                [0.0, self.resolution[1]],
-                [self.resolution[0], self.resolution[1]],
-                [self.resolution[0], 0.0],
-                [0.0, 0.0]
-            ])
-            #print(actual)
-            #print(target)
-            matrix = cv2.getPerspectiveTransform(self.smoother.points(), target)
-            distorted = cv2.warpPerspective(img, matrix, self.resolution)
-
-            return { "raw": img, "img": distorted}
+                target = np.float32([
+                    [0.0, self.resolution[1]],
+                    [self.resolution[0], self.resolution[1]],
+                    [self.resolution[0], 0.0],
+                    [0.0, 0.0]
+                ])
+                self.matrix = cv2.getPerspectiveTransform(self.smoother.points(), target)
         
-        last_result = None
-        return { "raw": img }
+        ret = { "raw": img }
+        if self.matrix is not None:
+            distorted = cv2.warpPerspective(img, self.matrix, self.resolution)
+            ret["img"] = distorted
+        else:  
+            last_result = None
+        return ret
 
     def __del__(self):
         #======= TODO!!!!!!!!!! ==========
@@ -157,7 +163,7 @@ class Bicturetaker:
 
 
 def main():
-    bt = Bicturetaker(cam_index=1)
+    bt = Bicturetaker(cam_index=1, tag_timeout=1)
     while True:
         d = bt.take_bicture()
 
