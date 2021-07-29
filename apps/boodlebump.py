@@ -1,4 +1,5 @@
 from ast import parse
+from lib.bolygonbetector import BolygonBetector
 
 import pygame.transform
 import pygame.draw
@@ -12,28 +13,12 @@ import time
 import pymunk.autogeometry
 
 
+bols = BolygonBetector()
+
+
 def barse_red_lines(image, field):
-    img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    mask1 = cv2.inRange(img_hsv, (0, 127, 127), (10, 255, 255))
-    mask2 = cv2.inRange(img_hsv, (170, 127, 127), (179, 255, 255))
-    mask = mask1 + mask2
-    contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if contours:
-        smooth_contours = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if contour.size < 6 or area < 1:
-                continue
-            smooth_contour = contour
-            area = cv2.contourArea(contour)
-            while smooth_contour.size >= 24 and smooth_contour.size > area / 32:
-                smooth_contour = smooth_contour[0::4].astype(int)
-            parsed_contour = [x[0].tolist() for x in smooth_contour]
-            smooth_contours.append(parsed_contour)
-            #cv2.drawContours(image, [smooth_contour], -1, (0,0,0), 2)
-    #cv2.imshow("lines", cv2.resize(image, (960, 540)))
-    #cv2.waitKey(1)
-    field["drawn_lines"] = smooth_contours
+    field["bolygons"] = bols.detect(image)
+
 
 class BoodleBump:
 
@@ -85,9 +70,9 @@ class BoodleBump:
                 self.space.remove(*self.drawn_lines)
 
             self.drawn_lines = []
-            drawn_lines = barsed_context.data["drawn_lines"]
+            drawn_lines = barsed_context.data["bolygons"]
             for line in drawn_lines:
-                for convexed_line in pymunk.autogeometry.convex_decomposition(list(reversed(line)), 10):
+                for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
                     if len(convexed_line) < 4:
                         continue
                     parsed_line = []
@@ -167,8 +152,6 @@ class BoodleBump:
             for point in line.get_vertices():
                 parsed_line.append(self.__with_origin_and_scale(point, origin, scale))
             pygame.draw.polygon(context.screen, (63, 0, 0), parsed_line)
-        
-        # print(len(self.drawn_lines))
 
         boodle_position = (self.boodle.position[0], self.boodle.position[1])
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
