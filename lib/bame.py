@@ -6,7 +6,7 @@ from time import time
 from lib.bicturemaker import Bicturemaker
 from lib.bicturetaker import Bicturetaker
 from lib.barameters import Barameters
-from typing import Optional, Type, Any, List, Dict
+from typing import Optional, Type, Any, List, Dict, Union
 import pygame
 from .util.keyframes import Keyframes
 from .barser import Barser, BarserOptions
@@ -93,12 +93,14 @@ class InitTagsScene:
 
 class BamePadScene:
     factory: BamePadFactory
+    registrar: BeymapRegistrar
     def __init__(self, bame: "Bame") -> None:
         self.bame = bame
+        self.registrar = self.bame.beymap
         pass
 
     def load(self, context: SceneLoadContext):
-        self.factory = BamePadFactory()
+        self.factory = BamePadFactory(self.registrar)
         
         self.font = pygame.font.SysFont(None, 24)
         pass
@@ -113,10 +115,14 @@ class BamePadScene:
         textimg = self.font.render(f'Game starts when everyone is ready.', True, (255, 255, 255))
         context.screen.blit(textimg, (0, 60))
 
+        player_list_start = 5
+
         can_start = len(self.factory.get_active_controllers()) > 0
-        for idx, parcel in enumerate(self.factory.get_active_controllers(), start=5):
+
+        player_height = (1+len(self.registrar.actions))*20
+        for idx, parcel in enumerate(self.factory.get_active_controllers()):
             textimg = self.font.render(f'Player {parcel.metadata.player_num}: {parcel.metadata.joystick.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
-            context.screen.blit(textimg, (0, idx*20))
+            context.screen.blit(textimg, (0, player_list_start*20 + idx*player_height))
             if not parcel.ready:
                 can_start = False
 
@@ -129,8 +135,8 @@ class BamePadScene:
         return can_start
 
     def unload(self):
-        self.bame.bamepads = self.factory.build()
-        self.bame.beymap = BeymapManager(self.bame.bamepads, self.bame.barameters)
+        (self.bame.bamepads, self.bame.beymap) = self.factory.build(self.bame.barameters)
+        # self.bame.beymap = self.registrar.build(self.bame.bamepads, self.bame.barameters)
         pass
 
 class SceneWithBarser:
@@ -175,10 +181,12 @@ class SceneWithBarser:
 
 class Bame:
     bamepads: Optional[BamePadManager]
-    beymap: Optional[BeymapManager]
+    beymap: Union[BeymapManager, BeymapRegistrar]
     def __init__(self, classname: Type):
         self.barameters = Barameters()
         self.game_instance = classname()
+        self.bamepads = None
+        self.beymap = BeymapRegistrar()
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
@@ -191,9 +199,6 @@ class Bame:
                     SceneWithBarser(self, sub_scene=self.game_instance)
                 ]
 
-        self.bamepads = None
-        self.beymap = None
-
     def run(self):
         if os.name == 'nt':
             ctypes.windll.user32.SetProcessDPIAware()
@@ -204,7 +209,7 @@ class Bame:
 
         context = LoadContext()
         context.bicturemaker = self.bicturemaker
-        context.beymap_registrar = BeymapRegistrar()
+        context.beymap_registrar = self.beymap
         self.game_instance.load(context)
 
         self.start_loop()
@@ -269,7 +274,13 @@ class Bame:
                 else:
                     # Map Gamepad events
                     if self.bamepads is not None:
+                        print("Bamepadding event: ", event)
                         event = self.bamepads.map_event(event)
+                        print(" To: ", event)
+                    if self.beymap is not None and isinstance(self.beymap, BeymapManager):
+                        print("Beymapping event", event)
+                        event = self.beymap.map_event(event)
+                        print(" TO: ", event)
                     if event is not None:
                         unhandled_events.append(event)
 
