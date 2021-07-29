@@ -163,7 +163,7 @@ class Bicturetaker:
 
 
 def main():
-    bt = Bicturetaker(cam_index=1)
+    bt = Bicturetaker(cam_index=1, tag_timeout=1)
     while True:
         d = bt.take_bicture()
 

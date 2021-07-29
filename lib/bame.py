@@ -55,7 +55,7 @@ class InitTagsScene:
         self.bame = bame
 
     def load(self, context: LoadContext):
-        self.taker = Bicturetaker(cam_index=self.bame.barameters.camera_index)
+        self.taker = Bicturetaker(cam_index=self.bame.barameters.camera_index, tag_timeout=0.1)
 
     def tick(self, context: TickContext) -> bool:
         d = self.taker.take_bicture()
