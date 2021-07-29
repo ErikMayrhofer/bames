@@ -1,5 +1,6 @@
 from lib.barameters import Barameters
 from lib import beymap
+import pygame.key
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import pygame
 from pygame.event import Event
@@ -138,14 +139,62 @@ MAPS = {
             "HATS": {
                 0: LEFT_HAT
                 }
-        }
+        },
+        "KEYBOARDEMU1": {
+            "BUTTONS": {
+                pygame.K_UP: BUTTON_SYMBOL_TOP,       
+                pygame.K_DOWN: BUTTON_SYMBOL_BOTTOM,       
+                pygame.K_LEFT: BUTTON_SYMBOL_LEFT,       
+                pygame.K_RIGHT: BUTTON_SYMBOL_RIGHT,       
+                },
+            "AXES": {
+
+                },
+            "HATS":{
+
+                }
+            }
     }
+
+def get_fake_joystick_id(type: str, index: int) -> int:
+    if type == "KEYBOARD" and index == 1:
+        return -1
+    raise Exception(f"Unknown fake joystick {type} {index}")
+
+class KeyboardFakeJoystick:
+    def __init__(self, instance_id) -> None:
+        self.instance_id = instance_id
+        pass
+
+    def get_button(self, raw):
+        return pygame.key.get_pressed()[raw]
+
+    def get_axis(self, raw):
+        return None
+
+    def get_hat(self, raw):
+        return None
+
+    def get_name(self):
+        return "KEYBOARD EMULATED JOYSTICK1"
+
+    def get_guid(self):
+        return "KEYBOARDEMU1"
+
+    def get_instance_id(self):
+        return self.instance_id
 
 class JoystickMetadata:
     def __init__(self, joystick: Joystick) -> None:
-        self.joystick = joystick
+        self.__joystick = joystick
         self.player_num = 0
         pass
+
+    def quit(self):
+        self.__joystick.quit()
+
+    def instance_id(self) -> int:
+        return self.__joystick.get_instance_id()
 
     def map_button(self, raw_button: int):
         return self.__map("BUTTONS", raw_button)
@@ -156,8 +205,12 @@ class JoystickMetadata:
     def map_hat(self, raw_hat: int):
         return self.__map("HATS", raw_hat)
 
+    def get_name(self):
+        return self.__joystick.get_name()
+
+
     def __map(self, type, raw) -> str:
-        name = self.joystick.get_guid()
+        name = self.__joystick.get_guid()
         if name in MAPS:
             map = MAPS[name][type]
             if raw in map:
@@ -171,7 +224,7 @@ class JoystickMetadata:
         return WEIRD_DISABLED_SHIT
 
     def __reverse_map(self, type, control) -> Optional[Tuple[str, int]]:
-        name = self.joystick.get_guid()
+        name = self.__joystick.get_guid()
         if name in MAPS:
             for type, map in MAPS[name].items():
                 for raw, name in map.items():
@@ -185,27 +238,18 @@ class JoystickMetadata:
     def __f_reverse_map(self, type, control) -> Tuple[str, int]:
         r = self.__reverse_map(type, control)
         if r is None:
-            raise Exception(f"Could not reverse map {control} for controller {self.joystick.get_name()}")
+            raise Exception(f"Could not reverse map {control} for controller {self.__joystick.get_name()}")
         return r
-
-    # def get_button(self, control) -> bool:
-        # return self.joystick.get_button(self.__f_reverse_map("BUTTONS", control))
-# 
-    # def get_axis(self, control) -> float:
-        # return self.joystick.get_axis(self.__f_reverse_map("AXES", control))
-# 
-    # def get_hat(self, control) -> Tuple[float, float]:
-        # return self.joystick.get_hat(self.__f_reverse_map("HATS", control))
  
     def get_control(self, control) -> Union[Tuple[float, float], bool, float]:
         (type, raw) = self.__f_reverse_map("HATS", control)
         if type == "HATS":
-            return self.joystick.get_hat(raw)
+            return self.__joystick.get_hat(raw)
         if type == "BUTTONS":
-            return self.joystick.get_button(raw)
+            return self.__joystick.get_button(raw)
         if type == "AXES":
-            return self.joystick.get_axis(raw)
-        raise Exception(f"Unknown type returned for control reverse mapping: {control} -> {type}, {raw} on controller {self.joystick.get_name()}")
+            return self.__joystick.get_axis(raw)
+        raise Exception(f"Unknown type returned for control reverse mapping: {control} -> {type}, {raw} on controller {self.__joystick.get_name()}")
 
 class Bvent:
     action: Optional[str]
@@ -220,11 +264,11 @@ class Bvent:
         return f"<Bvent({self.type} : {self.control_name}({self.action}) player={self.player}, value={self.value})>"
 
 
-MAPPABLE_EVENTS = {
+JOYSTICK_EVENTS = {
         pygame.JOYBUTTONDOWN,
         pygame.JOYBUTTONUP,
         pygame.JOYHATMOTION,
-        pygame.JOYAXISMOTION
+        pygame.JOYAXISMOTION,
         }
 
 class BamePadManager:
@@ -232,13 +276,15 @@ class BamePadManager:
     def __init__(self, joysticks: List[JoystickMetadata]) -> None:
         self.joysticks = {}
         for stick in joysticks:
-            self.joysticks[stick.joystick.get_instance_id()] = stick
-    
+            self.joysticks[stick.instance_id()] = stick
+
         pass
 
     def map_event(self, event: Event) -> Optional[Union[Event, Bvent]]:
-        if event.type in MAPPABLE_EVENTS:
-            joystick = self.joysticks[event.instance_id]
+        joystick = self.__get_joystick_from_event(event)
+        print("EVENT: ", event, joystick)
+        if joystick is not None:
+
             (value, control_name) = self.__extract_mapped_control_from_event(joystick, event)
             player = joystick.player_num
             if control_name is WEIRD_DISABLED_SHIT: 
@@ -248,7 +294,15 @@ class BamePadManager:
                     value=value,
                     player=player,
                     type=event.type)
-        return event
+
+    def __get_joystick_from_event(self, event: Event) -> Optional[JoystickMetadata]:
+        if event.type in JOYSTICK_EVENTS:
+            return self.joysticks[event.instance_id]
+        if event.type == pygame.KEYDOWN:
+            return self.joysticks[get_fake_joystick_id("KEYBOARD", 1)]
+        if event.type == pygame.KEYUP:
+            return self.joysticks[get_fake_joystick_id("KEYBOARD", 1)]
+        return None
 
     def of_player(self, player_num) -> Optional[JoystickMetadata]:
         for stick in self.joysticks.values():
@@ -265,14 +319,16 @@ class BamePadManager:
         if event.type == pygame.JOYAXISMOTION:
             return (event.value, joystick.map_axes(event.axis))
         if event.type == pygame.JOYHATMOTION:
-            print("Hat: ", event)
             return (event.value, joystick.map_hat(event.hat))
+        if event.type == pygame.KEYDOWN:
+            return (True, joystick.map_button(event.key))
+        if event.type == pygame.KEYUP:
+            return (False, joystick.map_button(event.key))
         raise Exception("Unsupported event type: ", event.type)
 
-
 class JoystickFactoryParcel:
-    def __init__(self, joystick_index) -> None:
-        self.metadata = JoystickMetadata(Joystick(joystick_index))
+    def __init__(self, joystick_metadata) -> None:
+        self.metadata = joystick_metadata
         self.active = False
         self.ready = False
         pass
@@ -282,23 +338,35 @@ class JoystickFactoryParcel:
 
     def should_be_built(self):
         return self.active
+
+    def __str__(self) -> str:
+        return f"<FactoryParcel(ready={self.ready} active={self.active} {self.metadata})>"
     
 class BamePadFactory:
     joysticks: Dict[int, JoystickFactoryParcel]
+    fake_joystick: JoystickFactoryParcel
     player_nums: Set[int]
     def __init__(self, beymapregistrar: 'BeymapRegistrar') -> None:
         self.beymapregistrar = beymapregistrar
         self.joysticks = {}
         self.player_nums = set() 
-        for x in range (js.get_count()):
-            joystick = JoystickFactoryParcel(x)
-            self.joysticks[joystick.metadata.joystick.get_instance_id()] = joystick
+        for joystick in self.generate_existing_joysticks():
+            self.joysticks[joystick.metadata.instance_id()] = joystick
+
+    def generate_existing_joysticks(self) -> List[JoystickFactoryParcel]:
+        ret = []
+        js_count = js.get_count()
+        for x in range(js_count):
+            ret.append(JoystickFactoryParcel(JoystickMetadata(Joystick(x))))
+        self.fake_joystick = JoystickFactoryParcel(JoystickMetadata(KeyboardFakeJoystick(get_fake_joystick_id("KEYBOARD", 1))))
+        ret.append(self.fake_joystick)
+        return ret
 
 
     def build(self, barameters: Barameters) -> Tuple[BamePadManager, 'BeymapManager']:
         for x in self.joysticks.values():
             if not x.active:
-                x.metadata.joystick.quit()
+                x.metadata.quit()
 
         beymap = BamePadManager([x.build() for x in self.joysticks.values() if x.should_be_built()])
         return (
@@ -306,8 +374,14 @@ class BamePadFactory:
                 self.beymapregistrar.build(beymap, barameters)
                )
 
-    def handle_press(self, joystick_instance_id, button_index):
-        joystick = self.joysticks[joystick_instance_id]
+    def handle_event(self, event: Event):
+        if event.type == pygame.JOYBUTTONDOWN:
+            new_instance_id = event.instance_id
+            self.handle_press(self.joysticks[new_instance_id], event.button)
+        if event.type == pygame.KEYDOWN:
+            self.handle_press(self.joysticks[get_fake_joystick_id("KEYBOARD", 1)], event.key)
+
+    def handle_press(self, joystick, button_index):
 
         mapped_button = joystick.metadata.map_button(button_index)
 

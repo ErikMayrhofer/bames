@@ -121,16 +121,14 @@ class BamePadScene:
 
         player_height = (1+len(self.registrar.actions))*20
         for idx, parcel in enumerate(self.factory.get_active_controllers()):
-            textimg = self.font.render(f'Player {parcel.metadata.player_num}: {parcel.metadata.joystick.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
+            textimg = self.font.render(f'Player {parcel.metadata.player_num}: {parcel.metadata.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
             context.screen.blit(textimg, (0, player_list_start*20 + idx*player_height))
             if not parcel.ready:
                 can_start = False
 
 
         for event in context.events:
-            if event.type == pygame.JOYBUTTONDOWN:
-                new_instance_id = event.instance_id
-                self.factory.handle_press(new_instance_id, event.button)
+                self.factory.handle_event(event)
 
         return can_start
 
@@ -147,24 +145,26 @@ class SceneWithBarser:
         # TODO: Barser is initiated here and therefore always scans...1920.
 
     def load(self, context: SceneLoadContext):
-        self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
-        self.barser.launch()
+        if not self.bame.barameters.start_without_barser:
+            self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
+            self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
         next_scene = False
-        parsed_game = self.barser.get_bayload()
-        if parsed_game or False:
-            barsed_context = BarsedContext()
-            barsed_context.age = time() - parsed_game.time
-            barsed_context.data = parsed_game.data.barsed_info
-            barsed_context.image = parsed_game.data.image
-            next_scene = self.sub_scene.tick(context, barsed_context)
+        if self.bame.barameters.start_without_barser:
+            next_scene = self.sub_scene.tick(context, None)
         else:
-            if self.bame.barameters.start_without_barser:
-                next_scene = self.sub_scene.tick(context, None)
-            # print("Waiting for barser to do something....")
-            # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
-            pass
+            parsed_game = self.barser.get_bayload()
+            if parsed_game:
+                barsed_context = BarsedContext()
+                barsed_context.age = time() - parsed_game.time
+                barsed_context.data = parsed_game.data.barsed_info
+                barsed_context.image = parsed_game.data.image
+                next_scene = self.sub_scene.tick(context, barsed_context)
+            else:
+                print("Waiting for barser to do something....")
+                # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
+                pass
 
         shape = context.screen.get_size()
         context.screen.blits([

@@ -73,7 +73,8 @@ class BeymapRegistrar:
         self.player_mappings[player_num] = { a.name: a.default for a in self.actions }
 
     def remove_player(self, player_num):
-        self.player_mappings.pop(player_num)
+        if player_num in self.player_mappings:
+            self.player_mappings.pop(player_num)
 
     def build(self, bamepad: BamePadManager, barameters: Barameters) -> BeymapManager:
         print("Player Mappings: ", self.player_mappings)
