@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, SupportsBytes
 from pygame.event import Event
 from pymunk.vec2d import Vec2d
 from lib.bicturemaker import Bicturemaker
@@ -14,16 +14,25 @@ import pymunk.autogeometry
 import pygame.font
 
 
-bols = BolygonBetector()
+red_bols = BolygonBetector((170, 127, 127), (10, 255, 255))
+green_bols = BolygonBetector((50, 127, 127), (70, 255, 255))
+blue_bols = BolygonBetector((110, 127, 127), (130, 255, 255))
 
 
 def barse_red_bolygons(image, field):
-    field["bolygons"] = bols.detect(image)
+    field["red_bolygons"] = red_bols.detect(image)
 
+def barse_green_bolygons(image, field):
+    field["green_bolygons"] = green_bols.detect(image)
 
-class Bong:
+def barse_blue_bolygons(image, field):
+    field["blue_bolygons"] = blue_bols.detect(image)
 
-    barse_red_lines = BarserMethod(barse_red_bolygons)
+class BarkourBall:
+
+    barse_red_bolygons = BarserMethod(barse_red_bolygons)
+    barse_green_bolygons = BarserMethod(barse_green_bolygons)
+    barse_blue_bolygons = BarserMethod(barse_blue_bolygons)
     
     def load(self, context: LoadContext) -> None:
         
@@ -38,10 +47,28 @@ class Bong:
 
         self.started = False
 
-        self.drawn_lines = []
+        self.red_lines = []
+        self.green_lines = []
+        self.blue_lines = []
         self.last_updated = None
 
         self.time_won = None
+        self.sub_steps = 20
+
+    def tick(self, context: TickContext, barsed_context: BarsedContext):
+
+        if self.__handle_events(context.events):
+            return True
+
+        if not self.started:
+            self.__handle_barsed_context(barsed_context)
+
+        for x in range(self.sub_steps):
+            self.space.step(context.delta_ms / 1000 / self.sub_steps)
+
+        self.__check_win()
+
+        self.__render()
 
     def __init_objects(self):
 
@@ -59,30 +86,18 @@ class Bong:
         self.ball.position = self.start
         ball_shape = pymunk.Circle(self.ball, self.ball_radius)
         ball_shape.friction = 0.3
+        ball_shape.elasticity = 0.5
         self.space.add(self.ball, ball_shape)
 
         self.borders = []
         _, _, self.start_bottom = self.__set_borders(self.start)
         self.__set_borders(self.end)
 
-    def tick(self, context: TickContext, barsed_context: BarsedContext):
-
-        if self.__handle_events(context.events):
-            return True
-
-        if not self.started:
-            self.__handle_barsed_context(barsed_context)
-
-        self.space.step(context.delta_ms / 1000)
-
-        self.__check_win()
-
-        self.__render()
-
     def __reset(self):
 
         self.ball.position = self.start
         self.ball.velocity = (0, 0)
+        self.ball.angular_velocity = 0
 
         self.space.remove(*self.borders)
 
@@ -99,7 +114,12 @@ class Bong:
                     self.started = True
                     self.space.remove(self.start_bottom)
                     self.borders.remove(self.start_bottom)
-                if event.key == pygame.K_r:
+                if event.unicode == 'r':
+                    self.started = False
+                    self.__reset()
+                if event.unicode == 'R':
+                    self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
+                    self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
                     self.started = False
                     self.__reset()
         return False
@@ -110,12 +130,12 @@ class Bong:
         if self.last_updated is None or t - self.last_updated > 1:
             self.last_updated = t
 
-            drawn_lines = barsed_context.data["bolygons"]
-            if drawn_lines is not None:
-                if self.drawn_lines:
-                    self.space.remove(*self.drawn_lines)
-                self.drawn_lines = []
-                for line in drawn_lines:
+            red_lines = barsed_context.data["red_bolygons"]
+            if red_lines is not None:
+                if self.red_lines:
+                    self.space.remove(*self.red_lines)
+                self.red_lines = []
+                for line in red_lines:
                     for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
                         if len(convexed_line) < 4:
                             continue
@@ -123,10 +143,42 @@ class Bong:
                         for point in convexed_line:
                             parsed_line.append(self.bicturemaker.game2munk(Vec2d(point[0], point[1])))
                         line_ground = pymunk.Poly(self.space.static_body, parsed_line)
-                        line_ground.friction = 0.3
-                        line_ground.elasticity = 1
                         self.space.add(line_ground)
-                        self.drawn_lines.append(line_ground)
+                        self.red_lines.append(line_ground)
+
+            green_lines = barsed_context.data["green_bolygons"]
+            if green_lines is not None:
+                if self.green_lines:
+                    self.space.remove(*self.green_lines)
+                self.green_lines = []
+                for line in green_lines:
+                    for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
+                        if len(convexed_line) < 4:
+                            continue
+                        parsed_line = []
+                        for point in convexed_line:
+                            parsed_line.append(self.bicturemaker.game2munk(Vec2d(point[0], point[1])))
+                        line_ground = pymunk.Poly(self.space.static_body, parsed_line)
+                        line_ground.elasticity = 0.99
+                        self.space.add(line_ground)
+                        self.green_lines.append(line_ground)
+
+            blue_lines = barsed_context.data["blue_bolygons"]
+            if blue_lines is not None:
+                if self.blue_lines:
+                    self.space.remove(*self.blue_lines)
+                self.blue_lines = []
+                for line in blue_lines:
+                    for convexed_line in pymunk.autogeometry.convex_decomposition(line, 10):
+                        if len(convexed_line) < 4:
+                            continue
+                        parsed_line = []
+                        for point in convexed_line:
+                            parsed_line.append(self.bicturemaker.game2munk(Vec2d(point[0], point[1])))
+                        line_ground = pymunk.Poly(self.space.static_body, parsed_line)
+                        line_ground.friction = 10
+                        self.space.add(line_ground)
+                        self.blue_lines.append(line_ground)
 
     def __check_win(self):
         t = time.time()
@@ -148,8 +200,14 @@ class Bong:
         for border in self.borders:
             self.bicturemaker.draw_line((255, 0, 0), border.a, border.b)
 
-        for line in self.drawn_lines:
+        for line in self.red_lines:
             self.bicturemaker.draw_polygon((63, 0, 0), line)
+
+        for line in self.green_lines:
+            self.bicturemaker.draw_polygon((0, 63, 0), line)
+
+        for line in self.blue_lines:
+            self.bicturemaker.draw_polygon((0, 0, 63), line)
 
     def __set_borders(self, point: Vec2d):
         left_top = point + (-self.ball_radius - 0.1, 0)
@@ -173,4 +231,4 @@ class Bong:
         return left, right, bottom
 
 if __name__ == '__main__':
-    Bame(Bong).run()
+    Bame(BarkourBall).run()

@@ -2,14 +2,19 @@ import cv2
 
 
 class BolygonBetector:
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, lower, higher, **kwargs) -> None:
+        self.lower = lower
+        self.higher = higher
         pass
 
     def detect(self, image):
         img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        mask1 = cv2.inRange(img_hsv, (0, 127, 127), (10, 255, 255))
-        mask2 = cv2.inRange(img_hsv, (170, 127, 127), (179, 255, 255))
-        mask = mask1 + mask2
+        if self.lower[0] <= self.higher[0]:
+            mask = cv2.inRange(img_hsv, self.lower, self.higher)
+        else:
+            mask1 = cv2.inRange(img_hsv, (0, self.lower[1], self.lower[2]), self.higher)
+            mask2 = cv2.inRange(img_hsv, self.lower, (179, self.higher[1], self.higher[2]))
+            mask = mask1 + mask2
         contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
             smooth_contours = []
