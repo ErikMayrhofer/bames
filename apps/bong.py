@@ -13,7 +13,6 @@ import random
 import pygame.gfxdraw
 import pymunk.autogeometry
 import pygame.font
-from lib.beymap import BeymapManager, Bvent
 
 
 bols = BolygonBetector((170, 127, 127), (10, 255, 255))
@@ -192,10 +191,10 @@ class Bong:
 
     def __check_win(self):
         if self.ball.position.x < self.left_box.position.x:
-            self.goals_left += 1
+            self.goals_right += 1
             self.__reset()
         if self.ball.position.x > self.right_box.position.x:
-            self.goals_right += 1
+            self.goals_left += 1
             self.__reset()
 
     def __render(self):
