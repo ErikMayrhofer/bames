@@ -184,7 +184,7 @@ class Bong:
     def __render(self):
         self.bicturemaker.draw_line((255, 255, 0), self.top.a, self.top.b)
         self.bicturemaker.draw_line((255, 255, 0), self.bottom.a, self.bottom.b)
-        self.bicturemaker.draw_filled_circle(self.ball.position, self.ball_radius, (255, 0, 0))
+        self.bicturemaker.draw_filled_circle(self.ball.position, self.ball_radius, (0, 255, 0))
         left_box_topleft = self.left_box.position + Vec2d(-self.left_box_size.x / 2, self.left_box_size.y / 2)
         left_box_bottomright = left_box_topleft + Vec2d(self.left_box_size.x, -self.left_box_size.y)
         self.bicturemaker.draw_rect((255, 255, 0), left_box_topleft, left_box_bottomright, border_radius=self.left_box_radius)
