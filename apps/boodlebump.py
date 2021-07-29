@@ -15,7 +15,7 @@ import time
 import pymunk.autogeometry
 
 
-bols = BolygonBetector()
+bols = BolygonBetector((170, 127, 127), (10, 255, 255))
 
 
 def barse_red_bolygons(image, field):
