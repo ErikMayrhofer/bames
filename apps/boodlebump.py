@@ -27,8 +27,6 @@ class BoodleBump:
     barse_red_lines = BarserMethod(barse_red_bolygons)
 
     def load(self, context: LoadContext) -> None:
-        pygame.init()
-
         self.bicturemaker = context.bicturemaker
         self.bicturemaker.set_origin(Bicturemaker.BOTTOM_CENTER)
         self.bicturemaker.set_scale(1/20)
@@ -149,11 +147,7 @@ class BoodleBump:
             self.space.step(sub_step_stuff)
 
         #Rendering
-        thicc = self.ground.radius * scale
-        a = self.__with_origin_and_scale(self.ground.a, origin, scale)
-        b = self.__with_origin_and_scale(self.ground.b, origin, scale)
-        # pygame.draw.line(context.screen, (255, 255, 255), a, b, int(thicc))
-        self.bicturemaker.draw_line(255, self.ground.a, self.ground.b, 1)
+        self.bicturemaker.draw_line((255, 0, 255), self.ground.a, self.ground.b)
 
         for line in self.drawn_lines:
             self.bicturemaker.draw_polygon((63, 0, 0), line)
@@ -165,12 +159,12 @@ class BoodleBump:
         angle = self._snap_angle(angle)
         print(angle)
 
-        (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
-        context.screen.blit(rot_img, rect)
-        pygame.draw.circle(context.screen, (255, 0, 0), boodle_position, 2)
+        # (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
+        # context.screen.blit(rot_img, rect)
+        # pygame.draw.circle(context.screen, (255, 0, 0), boodle_position, 2)
 
         # rotation = self.boodle.rotation_vector
-        # self.bicturemaker.draw_sprite(self.boodle_sprite, self.boodle.position, (-0.5, 0.5), rotation)
+        self.bicturemaker.draw_sprite(self.boodle_sprite, self.boodle.position, rotation)
 
         # print(self.boodle.is_sleeping)
 
@@ -188,10 +182,6 @@ class BoodleBump:
             angle = -180 
         return angle
 
-    def __rot_center(self, image, angle, center):
-        rotated_image = pygame.transform.rotate(image, angle)
-        new_rect = rotated_image.get_rect(center = image.get_rect(center = center).center)
-        return rotated_image, new_rect
 
     def __with_origin_and_scale(self, point, origin, scale):
         return (origin[0] + point[0] * scale, origin[1] - point[1] * scale)

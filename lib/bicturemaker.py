@@ -25,10 +25,16 @@ class Bicturemaker:
         self.resolution = screen.get_size()
 
 
-    def draw_sprite(self, sprite, position, offset=(0, 0), rotation=0):
+    def draw_sprite(self, sprite, center_pos, offset=(0, 0), rotation=0):
         angle = np.degrees(np.arctan2(rotation.y, rotation.x))
-        actual_position = (position[0] + offset[0], position[1] + offset[1])
-        self.screen.blit(pygame.transform.rotate(sprite, angle), self.munk2game(actual_position))
+        # actual_position = (position[0] + offset[0], position[1] + offset[1])
+        (rotated_image, new_rect) = self.__rot_center(sprite, angle, self.munk2game(center_pos))
+        self.screen.blit(rotated_image, new_rect)
+
+    def __rot_center(self, image, angle, center):
+        rotated_image = pygame.transform.rotate(image, angle)
+        new_rect = rotated_image.get_rect(center = image.get_rect(center = center).center)
+        return rotated_image, new_rect
 
     def draw_line(self, color, start_pos, end_pos, width=1):
         pygame.draw.line(self.screen, color, self.munk2game(start_pos), self.munk2game(end_pos), width)
