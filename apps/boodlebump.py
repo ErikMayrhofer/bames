@@ -43,8 +43,10 @@ class BoodleBump:
         pygame.init()
 
         self.space = pymunk.Space()
-        self.space.iterations = 50
+        self.space.iterations = 10
+        self.space.idle_speed_threshold = 0.0000001
         self.space.gravity = (0, -9.81)
+        self.sub_steps = 20
 
         self.ground = pymunk.Segment(self.space.static_body, (-10, 0.5), (10, 0.5), 0.2)
         self.ground.friction = 1
@@ -71,8 +73,6 @@ class BoodleBump:
         self.left_held = False
         
     def tick(self, context: TickContext, barsed_context: BarsedContext):
-        # print(context.fps)
-
         resolution = context.screen.get_size()
         origin = (resolution[0] / 2, resolution[1])
         scale = resolution[0] / 20
@@ -152,7 +152,9 @@ class BoodleBump:
             self.boodle.velocity = (5, self.boodle.velocity.y)
 
         #Simulation
-        self.space.step(context.delta_ms / 1000)
+        sub_step_stuff = context.delta_ms / 1000 / self.sub_steps
+        for _ in range(self.sub_steps):
+            self.space.step(sub_step_stuff)
 
         #Rendering
         thicc = self.ground.radius * scale
@@ -172,7 +174,7 @@ class BoodleBump:
         boodle_position = self.__with_origin_and_scale(boodle_position, origin, scale)
         rotation = self.boodle.rotation_vector
         angle = np.degrees(np.arctan2(rotation.y, rotation.x))
-        # angle = self._snap_angle(angle)
+        angle = self._snap_angle(angle)
         print(angle)
 
         (rot_img, rect) = self.__rot_center(self.boodle_sprite, angle, boodle_position)
