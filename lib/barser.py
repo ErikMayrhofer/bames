@@ -57,9 +57,12 @@ class BarserContext:
     __dict__: Dict[str, Any]
     def __init__(self, **kwargs) -> None:
         self.__dict__ = kwargs
-        pass
     def __getattr__(self, name: str) -> Any:
         return self.__dict__[name]
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, d):
+        self.__dict__ = d
 
 class BarserWorkerArguments:
     """

@@ -16,11 +16,7 @@ import pygame.font
 
 
 def barse_red_bolygons(image, field, context):
-    field["bolygons"] = context.bols.detect(image)
-
-
-def barse_red_bolygons(image, field):
-    field["bolygons"] = bols.detect(image)
+    field["red_bolygons"] = context.bols.betect(image)
 
 
 class Bong:
@@ -166,7 +162,7 @@ class Bong:
         if self.last_updated is None or t - self.last_updated > 1:
             self.last_updated = t
 
-            drawn_lines = barsed_context.data["bolygons"]
+            drawn_lines = barsed_context.data["red_bolygons"]
             if drawn_lines is not None:
                 if self.drawn_lines:
                     self.space.remove(*self.drawn_lines)

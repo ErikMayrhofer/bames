@@ -14,16 +14,14 @@ import pymunk.autogeometry
 import pygame.font
 
 
-
-
 def barse_red_bolygons(image, field, context):
-    field["red_bolygons"] = context["red_bols"].detect(image)
+    field["red_bolygons"] = context.red_bols.betect(image)
 
 def barse_green_bolygons(image, field, context):
-    field["green_bolygons"] = context["green_bols"].detect(image)
+    field["green_bolygons"] = context.green_bols.betect(image)
 
 def barse_blue_bolygons(image, field, context):
-    field["blue_bolygons"] = context["blue_bols"].detect(image)
+    field["blue_bolygons"] = context.blue_bols.betect(image)
 
 class BarkourBall:
 

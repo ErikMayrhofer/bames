@@ -12,7 +12,7 @@ def debug_image(image, _, _context):
     imshow_small("input", image)
 
 def barse_squares(image, field, context):
-    field["rects"] = context.bects.detect(image)
+    field["rects"] = context.bects.retect(image)
 
 
     print("Detecting rects: ")

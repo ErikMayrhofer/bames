@@ -21,7 +21,7 @@ import pymunk.autogeometry
 
 
 def barse_red_bolygons(image, field, context):
-    field["bolygons"] = context.bols.detect(image)
+    field["red_bolygons"] = context.bols.betect(image)
 
 
 def barse_blue_rectangles(image, field, context):
