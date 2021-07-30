@@ -12,6 +12,7 @@ import random
 import pygame.gfxdraw
 import pymunk.autogeometry
 import pygame.font
+import cv2
 
 
 def barse_red_bolygons(image, field, context):
@@ -23,6 +24,10 @@ def barse_green_bolygons(image, field, context):
 def barse_blue_bolygons(image, field, context):
     field["blue_bolygons"] = context.blue_bols.betect(image)
 
+def debug_img(image, field, context):
+    cv2.imshow("IMG", image)
+    cv2.waitKey(2)
+
 class BarkourBall:
 
     barser_context = BarserContext(
@@ -30,6 +35,7 @@ class BarkourBall:
             green_bols = BolygonBetector((50, 127, 127), (70, 255, 255)),
             blue_bols = BolygonBetector((110, 127, 127), (130, 255, 255))
             )
+    debugimg = BarserMethod(debug_img)
     barse_red_bolygons = BarserMethod(barse_red_bolygons)
     barse_green_bolygons = BarserMethod(barse_green_bolygons)
     barse_blue_bolygons = BarserMethod(barse_blue_bolygons)
@@ -195,7 +201,7 @@ class BarkourBall:
 
     def __render(self):
 
-        self.bicturemaker.draw_filled_circle(self.ball.position, self.ball_radius, (0, 0, 255))
+        self.bicturemaker.draw_filled_circle(self.ball.position, self.ball_radius, (255,255, 255))
 
         for border in self.borders:
             self.bicturemaker.draw_line((255, 0, 0), border.a, border.b)

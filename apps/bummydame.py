@@ -1,4 +1,4 @@
-from lib.bectangleretector import BectangleRetector, imshow_small, rect_to_verts
+from lib.bectangleretector import BectangleRetector, rect_to_verts
 import numpy as np
 from lib.bame import BameMetadata, BarsedContext, LoadContext
 from lib import Bame, TickContext, barameters
@@ -8,9 +8,6 @@ import cv2
 from lib.barser import BarserContext, BarserMethod
 
 
-def debug_image(image, _, _context):
-    imshow_small("input", image)
-
 def barse_squares(image, field, context):
     field["rects"] = context.bects.retect(image)
 
@@ -19,9 +16,6 @@ def barse_squares(image, field, context):
     for rect in field["rects"]:
         cv2.polylines(image, [rect_to_verts(rect).reshape((-1, 1, 2))], True, (255, 255, 255), 1)
     print("Detected rects")
-
-
-    imshow_small("rects: ", image)
 
 def rot_center(image, angle):
     # TODO: Why is this still here... bicturetaker?
@@ -35,7 +29,7 @@ def rot_center(image, angle):
 class BummyDame:
 
     barser_context = BarserContext(
-            bects = BectangleRetector()
+            bects = BectangleRetector(None, None)
     )
 
     def load(self, context: LoadContext) -> None:

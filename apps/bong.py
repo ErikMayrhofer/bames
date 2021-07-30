@@ -152,8 +152,7 @@ class Bong:
                     return True
         for bvent in context.bvents:
             if bvent.action == "RESTART":
-                if event.key == pygame.K_r:
-                    self.__reset()
+                self.__reset()
         return False
 
     def __handle_barsed_context(self, barsed_context: BarsedContext):
