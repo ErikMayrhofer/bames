@@ -19,6 +19,10 @@ def barse_red_bolygons(image, field, context):
     field["bolygons"] = context.bols.detect(image)
 
 
+def barse_red_bolygons(image, field):
+    field["bolygons"] = bols.detect(image)
+
+
 class Bong:
     barser_context = BarserContext(
         bols = BolygonBetector((170, 127, 127), (10, 255, 255))

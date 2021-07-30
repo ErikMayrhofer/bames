@@ -7,7 +7,7 @@ class BolygonBetector:
         self.higher = higher
         pass
 
-    def detect(self, image):
+    def betect(self, image):
         img_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         if self.lower[0] <= self.higher[0]:
             mask = cv2.inRange(img_hsv, self.lower, self.higher)
