@@ -1,3 +1,4 @@
+from pygame import joystick
 from pygame.constants import K_KP0, K_RETURN
 from lib.barameters import Barameters
 from lib import beymap
@@ -147,8 +148,8 @@ MAPS = {
                 pygame.K_DOWN: BUTTON_SYMBOL_BOTTOM,       
                 pygame.K_LEFT: BUTTON_SYMBOL_LEFT,       
                 pygame.K_RIGHT: BUTTON_SYMBOL_RIGHT,       
-                pygame.K_r: MENU_RIGHT,
-                pygame.K_RETURN: MENU_LEFT,
+                pygame.K_r: MENU_LEFT,
+                pygame.K_RETURN: MENU_RIGHT,
                 },
             "AXES": {
 
@@ -317,7 +318,9 @@ class BamePadManager:
             if stick.player_num == player_num:
                 return stick
         return None
-
+    
+    def get_players(self) -> List[JoystickMetadata]:
+        return list(self.joysticks.values())
 
     def __extract_mapped_control_from_event(self, joystick: JoystickMetadata, event: Event) -> Tuple[Any, str]:
         if event.type == pygame.JOYBUTTONUP:
@@ -354,8 +357,7 @@ class BamePadFactory:
     joysticks: Dict[int, JoystickFactoryParcel]
     fake_joystick: JoystickFactoryParcel
     player_nums: Set[int]
-    def __init__(self, beymapregistrar: 'BeymapRegistrar') -> None:
-        self.beymapregistrar = beymapregistrar
+    def __init__(self) -> None:
         self.joysticks = {}
         self.player_nums = set() 
         for joystick in self.generate_existing_joysticks():
@@ -371,16 +373,14 @@ class BamePadFactory:
         return ret
 
 
-    def build(self, barameters: Barameters) -> Tuple[BamePadManager, 'BeymapManager']:
+    def build(self, barameters: Barameters) -> BamePadManager:
         for x in self.joysticks.values():
             if not x.active:
                 x.metadata.quit()
 
-        beymap = BamePadManager([x.build() for x in self.joysticks.values() if x.should_be_built()])
-        return (
-                beymap,
-                self.beymapregistrar.build(beymap, barameters)
-               )
+        bamepad = BamePadManager([x.build() for x in self.joysticks.values() if x.should_be_built()])
+        return bamepad
+               
 
     def handle_event(self, event: Event):
         if event.type == pygame.JOYBUTTONDOWN:
@@ -400,13 +400,13 @@ class BamePadFactory:
                 joystick.active = True
                 joystick.metadata.player_num = self.get_free_num()
                 self.player_nums.add(joystick.metadata.player_num)
-                self.beymapregistrar.add_player(joystick.metadata.player_num)
+                # self.beymapregistrar.add_player(joystick.metadata.player_num)
         if mapped_button == BUTTON_SYMBOL_RIGHT:
             joystick.active = False
             joystick.ready = False
             self.player_nums.discard(joystick.metadata.player_num)
             joystick.metadata.player_num = -1
-            self.beymapregistrar.remove_player(joystick.metadata.player_num)
+            # self.beymapregistrar.remove_player(joystick.metadata.player_num)
 
     def get_free_num(self) -> int:
         for x in range(1, 20): # <- cap

@@ -7,7 +7,7 @@ import pymunk
 from lib.barser import BarserContext, BarserMethod
 from lib.bolygonbetector import BolygonBetector
 import pygame
-from lib.bame import Bame, BarsedContext, LoadContext, TickContext
+from lib.bame import Bame, BameMetadata, BarsedContext, LoadContext, TickContext
 import random
 import pygame.gfxdraw
 import pymunk.autogeometry
@@ -231,6 +231,8 @@ class BarkourBall:
         self.borders.append(right)
         self.borders.append(bottom)
         return left, right, bottom
+
+bame_metadata = BameMetadata(name="Barkour Ball", clazz=BarkourBall)
 
 if __name__ == '__main__':
     Bame(BarkourBall).run()

@@ -1,6 +1,7 @@
 import ctypes
+from lib import barameters
 from lib.beymap import BeymapManager, BeymapRegistrar
-from lib.bamepad import BamePadFactory, BamePadManager, Bvent
+from lib.bamepad import BUTTON_SYMBOL_BOTTOM, BUTTON_SYMBOL_TOP, BamePadFactory, BamePadManager, Bvent, MENU_RIGHT
 import os
 from time import time
 
@@ -14,6 +15,11 @@ from .util.keyframes import Keyframes
 from .barser import Barser, BarserOptions
 import numpy as np
 import cv2
+
+class BameMetadata:
+    def __init__(self, *, name: str, clazz: Type) -> None:
+        self.name = name
+        self.clazz = clazz
 
 class LoadContext:
     bicturemaker: Bicturemaker
@@ -99,11 +105,10 @@ class BamePadScene:
     registrar: BeymapRegistrar
     def __init__(self, bame: "Bame") -> None:
         self.bame = bame
-        self.registrar = self.bame.beymap
         pass
 
     def load(self, context: SceneLoadContext):
-        self.factory = BamePadFactory(self.registrar)
+        self.factory = BamePadFactory()
         
         self.font = pygame.font.SysFont(None, 24)
         pass
@@ -122,7 +127,7 @@ class BamePadScene:
 
         can_start = len(self.factory.get_active_controllers()) > 0
 
-        player_height = (1+len(self.registrar.actions))*20
+        player_height = 20
         for idx, parcel in enumerate(self.factory.get_active_controllers()):
             textimg = self.font.render(f'Player {parcel.metadata.player_num}: {parcel.metadata.get_name()} - Ready: {parcel.ready}', True, (0, 255, 0) if parcel.ready else (255, 255, 255))
             context.screen.blit(textimg, (0, player_list_start*20 + idx*player_height))
@@ -136,26 +141,31 @@ class BamePadScene:
         return can_start
 
     def unload(self):
-        (self.bame.bamepads, self.bame.beymap) = self.factory.build(self.bame.barameters)
+        self.bame.bamepads = self.factory.build(self.bame.barameters)
         # self.bame.beymap = self.registrar.build(self.bame.bamepads, self.bame.barameters)
         pass
 
 class SceneWithBarser:
-    def __init__(self, bame: "Bame", *, sub_scene):
-        self.sub_scene = sub_scene
+    def __init__(self, bame: "Bame", game_instance: Any):
         self.bame = bame
+        self.game_instance = game_instance
         self.tags = [ pygame.transform.scale(pygame.image.load("img/" + str(num) + ".png"), (self.bame.barameters.tag_size, self.bame.barameters.tag_size)) for num in range(4) ]
         # TODO: Barser is initiated here and therefore always scans...1920.
 
-    def load(self, context: SceneLoadContext):
+    def load(self, scene_context: SceneLoadContext):
+        context = LoadContext()
+        context.bicturemaker = scene_context.bicturemaker
+        context.beymap_registrar = scene_context.beymap_registrar
+        self.game_instance.load(context)
+        # TODO HANDLE THIS PROPERLY:
         if not self.bame.barameters.start_without_barser:
-            self.barser = Barser(self.sub_scene,options=BarserOptions.from_barameters(self.bame.barameters))
+            self.barser = Barser(self.game_instance,options=BarserOptions.from_barameters(self.bame.barameters))
             self.barser.launch()
 
     def tick(self, context: TickContext) -> bool:
         next_scene = False
         if self.bame.barameters.start_without_barser:
-            next_scene = self.sub_scene.tick(context, None)
+            next_scene = self.game_instance.tick(context, None)
         else:
             parsed_game = self.barser.get_bayload()
             if parsed_game:
@@ -163,7 +173,7 @@ class SceneWithBarser:
                 barsed_context.age = time() - parsed_game.time
                 barsed_context.data = parsed_game.data.barsed_info
                 barsed_context.image = parsed_game.data.image
-                next_scene = self.sub_scene.tick(context, barsed_context)
+                next_scene = self.game_instance.tick(context, barsed_context)
             else:
                 print("Waiting for barser to do something....")
                 # TODO: Draw some sort of loading sign on the game... parsed_game is None until the barser emtis for the first time.
@@ -181,26 +191,66 @@ class SceneWithBarser:
     def unload(self):
         self.barser.stop()
 
+class BameSelectorScene:
+    def __init__(self, bame: "Bame", metadatas: List[BameMetadata]) -> None:
+        self.metadatas = metadatas
+        self.selected = -1
+        self.bame = bame
+        pass
+    
+    def load(self, scene_context: SceneLoadContext):
+        scene_context.beymap_registrar.add_action("UP", BUTTON_SYMBOL_TOP)
+        scene_context.beymap_registrar.add_action("DOWN", BUTTON_SYMBOL_BOTTOM)
+        scene_context.beymap_registrar.add_action("SELECT", MENU_RIGHT)
+        self.font = pygame.font.SysFont(None, 24)
+    
+    def tick(self, context: TickContext):
+        for idx, metadata in enumerate(self.metadatas):
+            textimg = self.font.render(metadata.name, True, (0, 255, 0) if self.selected == idx else (255, 255, 255))
+            context.screen.blit(textimg, (0, idx*20))
+        
+        for event in context.bvents:
+            if event.action == "DOWN" and event.value == True:
+                self.selected += 1
+            if event.action == "UP" and event.value == True:
+                self.selected -= 1
+            if self.selected >= len(self.metadatas):
+                self.selected = 0
+            if self.selected < 0:
+                self.selected = len(self.metadatas)-1
+            if event.action == "SELECT" and event.value == True:
+                metadata = self.metadatas[self.selected]
+                game_instance = metadata.clazz()
+                self.bame.scenes.append(SceneWithBarser(self.bame, game_instance))
+                return True
+        return False
+
+    def unload(self):
+        pass
 
 class Bame:
     bamepads: Optional[BamePadManager]
-    beymap: Union[BeymapManager, BeymapRegistrar]
-    def __init__(self, classname: Type):
+    beymap: Optional[BeymapManager]
+    def __init__(self, classname: Union[Type, List[BameMetadata]]):
         self.barameters = Barameters()
-        self.game_instance = classname()
         self.bamepads = None
-        self.beymap = BeymapRegistrar()
         # Get Barsers from game_instance using the decorators
         # Pass Barsers to SceneWithBarser
         self.running = False
-        self.scenes = ([] if self.barameters.quick_start else [
-                    SplashScene(self), 
-                    InitTagsScene(self), 
-                ]) + (
-                        [BamePadScene(self)] if self.barameters.use_joystick else []
-                        ) + [
-                    SceneWithBarser(self, sub_scene=self.game_instance)
-                ]
+        self.beymap = None
+
+
+        self.scenes = (
+                    [SplashScene(self)] if not self.barameters.quick_start else []
+                ) + (
+                    [BamePadScene(self)] if self.barameters.use_joystick else []
+                ) + (
+                    [InitTagsScene(self)] if not self.barameters.quick_start else []
+                ) + (
+                    [BameSelectorScene(self, classname)] if isinstance(classname, list) else [SceneWithBarser(self, classname())]
+                ) #+ (
+                 #   [SceneWithBarser(self)]
+                #)
 
     def run(self):
         if os.name == 'nt':
@@ -210,11 +260,6 @@ class Bame:
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN if self.barameters.fullscreen else pygame.RESIZABLE)
         self.bicturemaker = Bicturemaker(self.screen, self.barameters)
 
-        context = LoadContext()
-        context.bicturemaker = self.bicturemaker
-        context.beymap_registrar = self.beymap
-        self.game_instance.load(context)
-
         self.start_loop()
 
     def next_scene(self):
@@ -223,9 +268,15 @@ class Bame:
         if len(self.scenes) == 0:
             self.running = False
         else:
+            print(f"Loading scene: {self.scenes[0]}")
+            beymap_registrar = BeymapRegistrar()
             context = LoadContext()
             context.bicturemaker = self.bicturemaker
+            context.beymap_registrar = beymap_registrar
             self.scenes[0].load(context)
+            if self.bamepads is not None:
+                self.beymap = beymap_registrar.build(self.bamepads, self.barameters)
+            print(f"Scene loaded.")
 
     def start_loop(self):
         clock = pygame.time.Clock()
@@ -247,8 +298,6 @@ class Bame:
             context.bicturemaker = self.bicturemaker
             context.beymap = self.beymap
 
-            #print(f"Unhandled Events {context.events}")
-
             self.screen.fill((0, 0, 0)) 
             
             next_scene = self.scenes[0].tick(context)
@@ -259,7 +308,6 @@ class Bame:
 
         if len(self.scenes) > 0:
             self.scenes[0].unload()
-        print("Bye!")
 
     def handle_events(self) -> Tuple[List[Event], List[Bvent]]:
         unhandled_events = []

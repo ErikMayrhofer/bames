@@ -1,6 +1,6 @@
 from lib.bectangleretector import BectangleRetector, imshow_small, rect_to_verts
 import numpy as np
-from lib.bame import BarsedContext, LoadContext
+from lib.bame import BameMetadata, BarsedContext, LoadContext
 from lib import Bame, TickContext, barameters
 import pygame
 from pygame.surface import Surface
@@ -8,7 +8,7 @@ import cv2
 from lib.barser import BarserContext, BarserMethod
 
 
-def debug_image(image, _, _):
+def debug_image(image, _, _context):
     imshow_small("input", image)
 
 def barse_squares(image, field, context):
@@ -73,6 +73,8 @@ class BummyDame:
         shape = context.screen.get_size()
         textimg = self.font.render(f'Age: {barsed_context.age}', True, (255, 255, 255))
         context.screen.blit(textimg, (shape[0]/2, shape[1]/2))
+
+bame_data = BameMetadata(name="Bummy dame", clazz=BummyDame)
 
 if __name__ == '__main__':
     Bame(BummyDame).run()

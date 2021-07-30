@@ -8,7 +8,7 @@ import pymunk
 from lib.barser import BarserContext, BarserMethod
 from lib.bolygonbetector import BolygonBetector
 import pygame
-from lib.bame import Bame, BarsedContext, LoadContext, TickContext
+from lib.bame import Bame, BameMetadata, BarsedContext, LoadContext, TickContext
 import random
 import pygame.gfxdraw
 import pymunk.autogeometry
@@ -215,6 +215,7 @@ class Bong:
 
         self.bicturemaker.draw_text(text, self.text_position)
 
+bame_data = BameMetadata(name="Bong", clazz=Bong)
 
 if __name__ == '__main__':
     Bame(Bong).run()

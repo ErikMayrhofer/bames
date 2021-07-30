@@ -30,7 +30,6 @@ class BeymapManager:
     map: Dict[int,PlayerBeyMapping]
 
     def __init__(self, map: Dict[int, Dict[str, str]], bamepad: BamePadManager, _: Barameters) -> None:
-        print("BeymapManager: ", map)
         self.bamepad = bamepad
         self.map = {playernum: PlayerBeyMapping(mapping) for (playernum, mapping) in map.items()}
 
@@ -74,10 +73,12 @@ class BeymapRegistrar:
     def add_player(self, player_num):
         self.player_mappings[player_num] = { a.name: a.default for a in self.actions }
 
-    def remove_player(self, player_num):
-        if player_num in self.player_mappings:
-            self.player_mappings.pop(player_num)
+   # def remove_player(self, player_num):
+        # if player_num in self.player_mappings:
+            # self.player_mappings.pop(player_num)
 
     def build(self, bamepad: BamePadManager, barameters: Barameters) -> BeymapManager:
-        print("Player Mappings: ", self.player_mappings)
+        for j in bamepad.get_players():
+            if not j.player_num in self.player_mappings:
+                self.add_player(j.player_num)
         return BeymapManager(self.player_mappings, bamepad, barameters)

@@ -1,4 +1,4 @@
-from lib.bame import Bame, BarsedContext, LoadContext, TickContext
+from lib.bame import Bame, BameMetadata, BarsedContext, LoadContext, TickContext
 from lib import bamepad
 import pygame
 
@@ -33,6 +33,7 @@ class JoyStickTest:
                 # print(event)
                 self.values[f"{event.player} - {event.control_name}"]=event.value
 
+joystick_test = BameMetadata(name="Joystick Test", clazz=JoyStickTest)
 
 if __name__ == '__main__':
     Bame(JoyStickTest).run()

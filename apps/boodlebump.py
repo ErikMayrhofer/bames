@@ -8,7 +8,7 @@ import pygame.draw
 import numpy as np
 from lib.barser import BarserContext, BarserMethod
 import pymunk
-from lib.bame import Bame, BarsedContext, LoadContext, TickContext
+from lib.bame import Bame, BameMetadata, BarsedContext, LoadContext, TickContext
 import pygame
 import cv2
 import time
@@ -155,6 +155,8 @@ class BoodleBump:
         rotation = self.boodle.rotation_vector
 
         self.bicturemaker.draw_sprite(self.boodle_sprite, self.boodle.position, rotation)
+
+bame_metadata = BameMetadata(name="Boodle Bump", clazz=BoodleBump)
 
 if __name__ == '__main__':
     Bame(BoodleBump).run()
