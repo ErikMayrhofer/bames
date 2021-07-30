@@ -20,13 +20,13 @@ blue_bols = BolygonBetector((110, 127, 127), (130, 255, 255))
 
 
 def barse_red_bolygons(image, field):
-    field["red_bolygons"] = red_bols.detect(image)
+    field["red_bolygons"] = red_bols.betect(image)
 
 def barse_green_bolygons(image, field):
-    field["green_bolygons"] = green_bols.detect(image)
+    field["green_bolygons"] = green_bols.betect(image)
 
 def barse_blue_bolygons(image, field):
-    field["blue_bolygons"] = blue_bols.detect(image)
+    field["blue_bolygons"] = blue_bols.betect(image)
 
 class BarkourBall:
 

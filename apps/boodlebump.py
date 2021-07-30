@@ -19,7 +19,7 @@ bols = BolygonBetector((170, 127, 127), (10, 255, 255))
 
 
 def barse_red_bolygons(image, field):
-    field["bolygons"] = bols.detect(image)
+    field["bolygons"] = bols.betect(image)
 
 
 class BoodleBump:

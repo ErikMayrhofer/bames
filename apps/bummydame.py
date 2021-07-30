@@ -7,13 +7,13 @@ from pygame.surface import Surface
 import cv2
 from lib.barser import BarserMethod
 
-bects = BectangleRetector()
+bects = BectangleRetector((110, 127, 127), (130, 255, 255))
 
 def debug_image(image, _):
     imshow_small("input", image)
 
 def barse_squares(image, field):
-    field["rects"] = bects.detect(image)
+    field["rects"] = bects.retect(image)
 
 
     print("Detecting rects: ")
