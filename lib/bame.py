@@ -20,6 +20,9 @@ class BameMetadata:
     def __init__(self, *, name: str, clazz: Type) -> None:
         self.name = name
         self.clazz = clazz
+    
+    def __str__(self) -> str:
+        return f"<BameMetadata(name=${self.name} clazz={self.clazz})>"
 
 class LoadContext:
     bicturemaker: Bicturemaker
