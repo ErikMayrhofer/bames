@@ -75,6 +75,11 @@ class Bicturemaker:
             pygame_vertices.append(self.munk2game(vertex))
         pygame.draw.polygon(self.screen, color, pygame_vertices)
 
+    def draw_polygon_from_game_vertices(self, color, vertices):
+        pygame_vertices = []
+        for vertex in vertices:
+            pygame_vertices.append(Vec2d(vertex[0], vertex[1]))
+        pygame.draw.polygon(self.screen, color, pygame_vertices)
 
     def set_origin(self, origin: Vec2d):
         self.origin = Vec2d(origin.x * self.resolution.x, origin.y * self.resolution.y)

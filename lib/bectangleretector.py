@@ -2,7 +2,7 @@ from sys import hash_info
 from typing import List, Tuple
 import cv2
 import numpy as np
-from cv2.cv2 import imshow, rectangle
+from pymunk.vec2d import Vec2d
 
 
 def extract_colors(image, lower, higher):
@@ -78,10 +78,11 @@ def verts_to_rect(verts: np.ndarray):
     ((center_x, center_y),width,height,angle)
     """
     center = np.average(verts, 0)
+    center = Vec2d(center[0], center[1])
 
     width = np.linalg.norm(verts[0]-verts[1], 2) 
     height = np.linalg.norm(verts[1]-verts[2], 2) 
-
+    width_height = Vec2d(width, height)
 
     angle = np.arctan2(*(verts[1] - verts[2]).T) * -1 # Top left is 0,0 -> Y axis is flipped
     
@@ -89,7 +90,7 @@ def verts_to_rect(verts: np.ndarray):
         height, width = width, height
         angle += np.pi/2
 
-    return center, width, height, angle
+    return center, width_height, angle
 
 def betect_rectangles(image) -> List[np.ndarray]:
     """
@@ -200,11 +201,11 @@ def betect_rectangles(image) -> List[np.ndarray]:
 
 
 def rect_to_verts(rectangle):
-    if len(rectangle) != 4:
+    if len(rectangle) != 3:
         print(rectangle)
         raise Exception("REE")
-    center, width, height, angle = rectangle
-    wrad, hrad = width/2, height/2
+    center, width_height, angle = rectangle
+    wrad, hrad = width_height / 2
     center = np.array(center)
 
 
@@ -219,7 +220,6 @@ def rect_to_verts(rectangle):
                          [np.sin(angle),  np.cos(angle)]])
     
     rotated = np.array([rotMatrix.dot(np.array(v)) + center for v in verts], dtype=np.int32)
-    # print("Rotated: ", rotated)
     return rotated
 
 
@@ -229,7 +229,7 @@ class KalmanRects:
         self.dist_threshold = dist_threshold
         self.life = life
 
-    def push(self,new_rect) -> Tuple[Tuple[int, int], int, int, float]:
+    def push(self, new_rect) -> Tuple[Vec2d, Vec2d, float]:
         new_center, *_ = new_rect
         
         # Todo use the rect which is closest.
@@ -260,7 +260,11 @@ class KalmanRect:
         self.invalid_for = begin_with_invalidity
     
     def push(self, rect):
-        (cx, cy), w, h, a = rect
+        if len(rect) != 3:
+            print(rect)
+            raise Exception("REE")
+
+        (cx, cy), (w, h), a = rect
 
         if len(self.history) > 0:
             (acx, acy), aw, ah, aa = self.current()
@@ -269,13 +273,6 @@ class KalmanRect:
             if dx > 10 or dy > 10 or dw > 5 or dh > 5 or da > (45/180*np.pi):
                 return
 
-        
-
-
-
-        if len(rect) != 4:
-            print(rectangle)
-            raise Exception("REE")
         self.history.append((cx, cy, w, h, a))
         self.invalid_for = max(0, self.invalid_for - 1)
         if len(self.history) > 20:
@@ -287,7 +284,7 @@ class KalmanRect:
     def current(self):
         avg = np.average(self.history, 0)
         cx, cy, w, h, a = avg
-        return (cx, cy), w, h, a
+        return Vec2d(cx, cy), Vec2d(w, h), a
 
 
 class BectangleRetector:
