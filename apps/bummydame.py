@@ -5,15 +5,14 @@ from lib import Bame, TickContext, barameters
 import pygame
 from pygame.surface import Surface
 import cv2
-from lib.barser import BarserMethod
+from lib.barser import BarserContext, BarserMethod
 
-bects = BectangleRetector()
 
-def debug_image(image, _):
+def debug_image(image, _, _):
     imshow_small("input", image)
 
-def barse_squares(image, field):
-    field["rects"] = bects.detect(image)
+def barse_squares(image, field, context):
+    field["rects"] = context.bects.detect(image)
 
 
     print("Detecting rects: ")
@@ -25,6 +24,7 @@ def barse_squares(image, field):
     imshow_small("rects: ", image)
 
 def rot_center(image, angle):
+    # TODO: Why is this still here... bicturetaker?
     """rotate a Surface, maintaining position."""
 
     loc = image.get_rect().center  #rot_image is not defined 
@@ -33,6 +33,11 @@ def rot_center(image, angle):
     return rot_sprite
 
 class BummyDame:
+
+    barser_context = BarserContext(
+            bects = BectangleRetector()
+    )
+
     def load(self, context: LoadContext) -> None:
         print("FONT INIT:")
         self.bicturemaker = context.bicturemaker

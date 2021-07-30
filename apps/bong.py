@@ -5,7 +5,7 @@ from pygame.event import Event
 from pymunk.vec2d import Vec2d
 from lib.bicturemaker import Bicturemaker
 import pymunk
-from lib.barser import BarserMethod
+from lib.barser import BarserContext, BarserMethod
 from lib.bolygonbetector import BolygonBetector
 import pygame
 from lib.bame import Bame, BarsedContext, LoadContext, TickContext
@@ -15,14 +15,14 @@ import pymunk.autogeometry
 import pygame.font
 
 
-bols = BolygonBetector((170, 127, 127), (10, 255, 255))
-
-
-def barse_red_bolygons(image, field):
-    field["bolygons"] = bols.detect(image)
+def barse_red_bolygons(image, field, context):
+    field["bolygons"] = context.bols.detect(image)
 
 
 class Bong:
+    barser_context = BarserContext(
+        bols = BolygonBetector((170, 127, 127), (10, 255, 255))
+            )
 
     barse_red_lines = BarserMethod(barse_red_bolygons)
     

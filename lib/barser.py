@@ -1,6 +1,6 @@
 from lib.barameters import Barameters
 from multiprocessing import Process, Pipe, connection
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from lib.bicturetaker import Bicturetaker
 import time
 import cv2
@@ -15,8 +15,8 @@ class BarserMethod:
         self.fun = fun
         pass
 
-    def run(self, *, undistorted_image, parsed_data):
-        self.fun(undistorted_image, parsed_data)
+    def run(self, *, undistorted_image, parsed_data, barser_context):
+        self.fun(undistorted_image, parsed_data, barser_context)
 
 # Decorators while pickling is broken on windows :(
 # def barser(fun):
@@ -53,8 +53,26 @@ class BarserOptions:
         options.camera_index = barameters.camera_index
         return options
 
+class BarserContext:
+    __dict__: Dict[str, Any]
+    def __init__(self, **kwargs) -> None:
+        self.__dict__ = kwargs
+        pass
+    def __getattr__(self, name: str) -> Any:
+        return self.__dict__[name]
 
-def barser_worker(pipe_connection: connection.Connection, barser_methods: List[BarserMethod], options: BarserOptions):
+class BarserWorkerArguments:
+    """
+    Exists to catch type errors when calling Process(... barser_worker) early.
+    """
+    def __init__(self, *, pipe_connection: connection.Connection, barser_methods: List[BarserMethod], barser_context: BarserContext, options: BarserOptions):
+        self.pipe_connection = pipe_connection
+        self.barser_methods = barser_methods
+        self.barser_context = barser_context
+        self.options = options
+
+
+def barser_worker(arguments: BarserWorkerArguments):
     """
     Worker method which runs in a seperate process. This creates the `WorkerBayload` and sends it to the `Barser`
 
@@ -69,12 +87,12 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
     """
     running = True
 
-    taker = Bicturetaker(cam_index=options.camera_index, tag_timeout=1)
+    taker = Bicturetaker(cam_index=arguments.options.camera_index, tag_timeout=1)
 
     print("[BW] Worker started...")
     while running:
-        if pipe_connection.poll(0):
-            res = pipe_connection.recv()
+        if arguments.pipe_connection.poll(0):
+            res = arguments.pipe_connection.recv()
             if res:
                 running = False
 
@@ -85,18 +103,18 @@ def barser_worker(pipe_connection: connection.Connection, barser_methods: List[B
             if image is not None:
                 # cv2.imshow("DBG", image)
                 # cv2.waitKey(1)
-                print("[BW] barser_worker running ", barser_methods)
                 barsed_info = {}
-                for method in barser_methods:
+                for method in arguments.barser_methods:
                     method.run(
                             undistorted_image=d["img"],
-                            parsed_data=barsed_info
+                            parsed_data=barsed_info,
+                            barser_context=arguments.barser_context
                             )
                 #Todo. This blocks until someone reads. maybe change that behaviour. Maybe a Queue would be a better option here.
-                pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=image, barsed_info=barsed_info))
+                arguments.pipe_connection.send(WorkerPayload(raw_image=d["raw"], image=image, barsed_info=barsed_info))
 
     print("[BW] Worker closing...")
-    pipe_connection.close()
+    arguments.pipe_connection.close()
 
 class WorkerHandle:
     """
@@ -104,10 +122,10 @@ class WorkerHandle:
 
     This class does all the multiprocessing magic.
     """
-    def __init__(self, barser_methods: List[BarserMethod], options: BarserOptions):
+    def __init__(self, barser_methods: List[BarserMethod], barser_context: BarserContext, options: BarserOptions):
 
         pipe_connection, child_pipe = Pipe()
-        process = Process(target=barser_worker, args=(child_pipe, barser_methods, options))
+        process = Process(target=barser_worker, args=(BarserWorkerArguments(pipe_connection=child_pipe, barser_methods=barser_methods, barser_context=barser_context, options=options), ))
         process.start()
 
         self.pipe_connection = pipe_connection
@@ -147,6 +165,7 @@ class Barser:
         self.handle = None
         self.last_barsed = None
         self.options = options
+        self.barser_context = None
 
         # Find all properties of type BarserMethod in the game_instance. 
         # Methods marked with @barser are also turned into BarserMethods
@@ -155,13 +174,15 @@ class Barser:
             val = getattr(game_instance, m)
             if isinstance(val, BarserMethod):
                 self.barser_methods.append(val)
+            if isinstance(val, BarserContext):
+                self.barser_context = val
         
 
     def launch(self):
         """
         Actually launches the thread. Do not forget to call stop() at the end.
         """
-        self.handle = WorkerHandle(self.barser_methods, options=self.options)
+        self.handle = WorkerHandle(self.barser_methods, self.barser_context, options=self.options)
         pass
 
     def get_bayload(self) -> Optional[BarsedWithTime]:

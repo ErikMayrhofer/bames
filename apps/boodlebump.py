@@ -6,7 +6,7 @@ from lib.bolygonbetector import BolygonBetector
 import pygame.transform
 import pygame.draw
 import numpy as np
-from lib.barser import BarserMethod
+from lib.barser import BarserContext, BarserMethod
 import pymunk
 from lib.bame import Bame, BarsedContext, LoadContext, TickContext
 import pygame
@@ -15,14 +15,17 @@ import time
 import pymunk.autogeometry
 
 
-bols = BolygonBetector((170, 127, 127), (10, 255, 255))
 
 
-def barse_red_bolygons(image, field):
-    field["bolygons"] = bols.detect(image)
+def barse_red_bolygons(image, field, context):
+    field["bolygons"] = context.bols.detect(image)
 
 
 class BoodleBump:
+
+    barser_context = BarserContext(
+            bols = BolygonBetector((170, 127, 127), (10, 255, 255))
+            )
 
     barse_red_lines = BarserMethod(barse_red_bolygons)
 

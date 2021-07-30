@@ -4,7 +4,7 @@ from pygame.event import Event
 from pymunk.vec2d import Vec2d
 from lib.bicturemaker import Bicturemaker
 import pymunk
-from lib.barser import BarserMethod
+from lib.barser import BarserContext, BarserMethod
 from lib.bolygonbetector import BolygonBetector
 import pygame
 from lib.bame import Bame, BarsedContext, LoadContext, TickContext
@@ -14,22 +14,24 @@ import pymunk.autogeometry
 import pygame.font
 
 
-red_bols = BolygonBetector((170, 127, 127), (10, 255, 255))
-green_bols = BolygonBetector((50, 127, 127), (70, 255, 255))
-blue_bols = BolygonBetector((110, 127, 127), (130, 255, 255))
 
 
-def barse_red_bolygons(image, field):
-    field["red_bolygons"] = red_bols.detect(image)
+def barse_red_bolygons(image, field, context):
+    field["red_bolygons"] = context["red_bols"].detect(image)
 
-def barse_green_bolygons(image, field):
-    field["green_bolygons"] = green_bols.detect(image)
+def barse_green_bolygons(image, field, context):
+    field["green_bolygons"] = context["green_bols"].detect(image)
 
-def barse_blue_bolygons(image, field):
-    field["blue_bolygons"] = blue_bols.detect(image)
+def barse_blue_bolygons(image, field, context):
+    field["blue_bolygons"] = context["blue_bols"].detect(image)
 
 class BarkourBall:
 
+    barser_context = BarserContext(
+            red_bols = BolygonBetector((170, 127, 127), (10, 255, 255)),
+            green_bols = BolygonBetector((50, 127, 127), (70, 255, 255)),
+            blue_bols = BolygonBetector((110, 127, 127), (130, 255, 255))
+            )
     barse_red_bolygons = BarserMethod(barse_red_bolygons)
     barse_green_bolygons = BarserMethod(barse_green_bolygons)
     barse_blue_bolygons = BarserMethod(barse_blue_bolygons)
