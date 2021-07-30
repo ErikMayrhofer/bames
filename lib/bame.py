@@ -17,8 +17,9 @@ import numpy as np
 import cv2
 
 class BameMetadata:
-    def __init__(self, *, name: str, clazz: Type) -> None:
+    def __init__(self, *, name: str, clazz: Type, players: Union[int, None] = None) -> None:
         self.name = name
+        self.players = players
         self.clazz = clazz
     
     def __str__(self) -> str:
@@ -209,7 +210,14 @@ class BameSelectorScene:
     
     def tick(self, context: TickContext):
         for idx, metadata in enumerate(self.metadatas):
-            textimg = self.font.render(metadata.name, True, (0, 255, 0) if self.selected == idx else (255, 255, 255))
+            players = len(context.bamepads.get_players())
+            color = (255, 255, 255)
+            if metadata.players is not None:
+                if metadata.players != players:
+                    color = (64, 64, 64)
+            if self.selected == idx:
+                color = (0, 255, 0)
+            textimg = self.font.render(f"{metadata.name} (Player Requirements: {metadata.players})", True, color)
             context.screen.blit(textimg, (0, idx*20))
         
         for event in context.bvents:
@@ -223,6 +231,11 @@ class BameSelectorScene:
                 self.selected = len(self.metadatas)-1
             if event.action == "SELECT" and event.value == True:
                 metadata = self.metadatas[self.selected]
+                if metadata.players is not None:
+                    players = len(context.bamepads.get_players())
+                    if players:
+                        if players != metadata.players:
+                            continue
                 game_instance = metadata.clazz()
                 self.bame.scenes.append(SceneWithBarser(self.bame, game_instance))
                 return True

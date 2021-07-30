@@ -215,7 +215,7 @@ class Bong:
 
         self.bicturemaker.draw_text(text, self.text_position)
 
-bame_data = BameMetadata(name="Bong", clazz=Bong)
+bame_data = BameMetadata(name="Bong", clazz=Bong, players=2)
 
 if __name__ == '__main__':
     Bame(Bong).run()

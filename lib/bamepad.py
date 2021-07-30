@@ -50,8 +50,9 @@ WEIRD_DISABLED_SHIT="WEIRD!!!"
 
 
 MAPS = {
-        # "Wireless Steam Controller": {
-        "03000000de2800004211000011010000": {
+        # "Wired Wireless Steam Controller": {
+        "03000000de2800000211000011010000": {
+        # "03000000de2800004211000011010000": {
             "BUTTONS": {
                 
             0: TOUCH_LEFT,
