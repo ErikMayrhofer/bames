@@ -1,5 +1,6 @@
 import time
 from typing import List, SupportsBytes
+from lib import bamepad
 from pygame.event import Event
 from pymunk.vec2d import Vec2d
 from lib.bicturemaker import Bicturemaker
@@ -41,6 +42,10 @@ class BarkourBall:
     barse_blue_bolygons = BarserMethod(barse_blue_bolygons)
     
     def load(self, context: LoadContext) -> None:
+
+        context.beymap_registrar.add_action("START", bamepad.BUTTON_SYMBOL_BOTTOM)
+        context.beymap_registrar.add_action("RESTART", bamepad.MENU_RIGHT)
+        context.beymap_registrar.add_action("NEXT", bamepad.MENU_LEFT)
         
         self.bicturemaker = context.bicturemaker
         self.bicturemaker.set_origin(Bicturemaker.BOTTOM_CENTER)
@@ -63,7 +68,7 @@ class BarkourBall:
 
     def tick(self, context: TickContext, barsed_context: BarsedContext):
 
-        if self.__handle_events(context.events):
+        if self.__handle_events(context):
             return True
 
         if not self.started:
@@ -111,23 +116,30 @@ class BarkourBall:
         _, _, self.start_bottom = self.__set_borders(self.start)
         self.__set_borders(self.end)
 
-    def __handle_events(self, events: List[Event]):
-        for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return True
-                if event.key == pygame.K_SPACE and not self.started:
+    def __handle_events(self, context: TickContext):
+
+        for bvent in context.bvents:
+            if bvent.action == "START":
+                if not self.started:
+                    print("Start the run.")
                     self.started = True
                     self.space.remove(self.start_bottom)
                     self.borders.remove(self.start_bottom)
-                if event.unicode == 'r':
-                    self.started = False
-                    self.__reset()
-                if event.unicode == 'R':
-                    self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
-                    self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
-                    self.started = False
-                    self.__reset()
+            if bvent.action == 'RESTART':
+                print("Restart the run")
+                self.started = False
+                self.__reset()
+            if bvent.action == 'NEXT':
+                print("Get new run.")
+                self.start = Vec2d(random.randint(-self.start_x, self.start_x), self.start_y)
+                self.end = Vec2d(random.randint(-self.end_x, self.end_x), self.end_y)
+                self.started = False
+                self.__reset()
+
+        for event in context.events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return True
         return False
 
     def __handle_barsed_context(self, barsed_context: BarsedContext):
